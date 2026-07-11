@@ -28,6 +28,7 @@ export function validateRegistrationFields(
     | 'city'
     | 'village'
     | 'gotra'
+    | 'photoUrl'
   >
 ): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -110,6 +111,10 @@ export function validateRegistrationFields(
 
   if (values.gotra?.trim() && !isValidRequiredText(values.gotra)) {
     errors.gotra = 'Gotra must be at least 2 characters';
+  }
+
+  if (!values.photoUrl?.trim()) {
+    errors.photoUrl = 'Member photo is required';
   }
 
   return errors;

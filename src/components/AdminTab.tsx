@@ -348,6 +348,7 @@ export default function AdminTab({
       relationship: memberForm.relationship,
       registrationDate: new Date().toISOString().slice(0, 10),
       isVerified: true,
+      photoUrl: memberForm.photoUrl,
     };
 
     onAddRegistration(newRegistration);

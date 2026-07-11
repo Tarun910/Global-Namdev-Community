@@ -88,20 +88,12 @@ export default function ProfileTab({ member, onUpdate, onLogout, language }: Pro
 
   const handleDownloadPng = () => {
     setIsRendering(true);
-    try {
-      downloadIdCardPng(previewMember);
-    } finally {
-      setIsRendering(false);
-    }
+    void downloadIdCardPng(previewMember).finally(() => setIsRendering(false));
   };
 
   const handleDownloadPdf = () => {
     setIsRendering(true);
-    try {
-      downloadIdCardPdf(previewMember);
-    } finally {
-      setIsRendering(false);
-    }
+    void downloadIdCardPdf(previewMember).finally(() => setIsRendering(false));
   };
 
   return (

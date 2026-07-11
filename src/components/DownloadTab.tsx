@@ -127,21 +127,13 @@ export default function DownloadTab({ registrations, language }: DownloadTabProp
   const handleDownloadPng = () => {
     if (!verifiedMember) return;
     setIsRendering(true);
-    try {
-      downloadIdCardPng(verifiedMember);
-    } finally {
-      setIsRendering(false);
-    }
+    void downloadIdCardPng(verifiedMember).finally(() => setIsRendering(false));
   };
 
   const handleDownloadPdf = () => {
     if (!verifiedMember) return;
     setIsRendering(true);
-    try {
-      downloadIdCardPdf(verifiedMember);
-    } finally {
-      setIsRendering(false);
-    }
+    void downloadIdCardPdf(verifiedMember).finally(() => setIsRendering(false));
   };
 
   if (step === 'otp') {

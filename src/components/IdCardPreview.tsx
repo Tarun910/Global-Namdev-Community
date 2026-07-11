@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { User } from 'lucide-react';
 import { Registration } from '../types';
 
 interface IdCardPreviewProps {
@@ -13,7 +14,7 @@ const IdCardPreview = forwardRef<HTMLDivElement, IdCardPreviewProps>(function Id
     <div
       ref={ref}
       data-id-card-export
-      className="relative w-full max-w-lg mx-auto min-h-[248px] rounded-3xl shadow-2xl border border-white/20 text-white saffron-gradient p-5 sm:p-6 flex flex-col overflow-hidden"
+      className="relative w-full max-w-lg mx-auto min-h-[280px] rounded-3xl shadow-2xl border border-white/20 text-white saffron-gradient p-5 sm:p-6 flex flex-col overflow-hidden"
     >
       <div className="absolute bottom-0 right-0 w-36 h-36 translate-x-1/4 translate-y-1/4 opacity-10 pointer-events-none flex items-center justify-center">
         <img src="/logo.png" alt="" className="w-28 h-28 object-contain" />
@@ -33,11 +34,27 @@ const IdCardPreview = forwardRef<HTMLDivElement, IdCardPreviewProps>(function Id
         </h4>
       </div>
 
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-2 py-4 min-h-[72px]">
-        <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Member Name</p>
-        <p className="font-sans text-lg sm:text-xl font-bold text-white leading-snug mt-1 px-2 line-clamp-2">
-          {member.fullName}
-        </p>
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-2 py-4 min-h-[120px] gap-3">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white/90 shadow-lg overflow-hidden bg-white/10 shrink-0">
+          {member.photoUrl ? (
+            <img
+              src={member.photoUrl}
+              alt={member.fullName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-white/15">
+              <User className="w-10 h-10 sm:w-12 sm:h-12 text-white/60" strokeWidth={1.5} />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-white/70 font-semibold">Member Name</p>
+          <p className="font-sans text-lg sm:text-xl font-bold text-white leading-snug mt-1 px-2 line-clamp-2">
+            {member.fullName}
+          </p>
+        </div>
       </div>
 
       <div className="relative z-10 shrink-0 text-center px-2 pt-3 border-t border-white/15">

@@ -6,6 +6,7 @@ import { Registration } from '../types';
 import { TranslationStrings } from '../lib/translations';
 import { COUNTRY_NAMES } from '../lib/countries';
 import { getStatesForCountryAsync } from '../lib/regions';
+import MemberPhotoUpload from './MemberPhotoUpload';
 
 export type RegistrationFormValues = Pick<
   Registration,
@@ -24,6 +25,7 @@ export type RegistrationFormValues = Pick<
   | 'city'
   | 'village'
   | 'relationship'
+  | 'photoUrl'
 >;
 
 interface RegistrationDetailsFormProps {
@@ -96,6 +98,25 @@ export default function RegistrationDetailsForm({
           <User className="w-3.5 h-3.5" />
           {t.formSectionPersonal}
         </h3>
+
+        <MemberPhotoUpload
+          value={values.photoUrl}
+          onChange={(photoUrl) => onChange('photoUrl', photoUrl)}
+          error={errors.photoUrl}
+          label={t.formPhotoLabel}
+          hint={t.formPhotoHint}
+          takePhotoLabel={t.formPhotoTake}
+          uploadPhotoLabel={t.formPhotoUpload}
+          removePhotoLabel={t.formPhotoRemove}
+          adjustPhotoLabel={t.formPhotoAdjust}
+          cameraTitle={t.formPhotoTake}
+          cameraCaptureLabel={t.formPhotoCapture}
+          adjustTitle={t.formPhotoAdjustTitle}
+          adjustHint={t.formPhotoAdjustHint}
+          savePhotoLabel={t.formPhotoSave}
+          cancelLabel={t.formPhotoCancel}
+          cameraFallbackHint={t.formPhotoCameraHint}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="space-y-1.5">

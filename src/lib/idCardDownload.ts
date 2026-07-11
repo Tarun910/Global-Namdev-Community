@@ -1,10 +1,13 @@
 import { jsPDF } from 'jspdf';
 import { Registration } from '../types';
+import { drawCircularMemberPhoto } from './memberPhoto';
 
 const CARD_WIDTH = 640;
 const CARD_HEIGHT = 400;
+const PHOTO_RADIUS = 52;
+const PHOTO_CENTER_Y = 168;
 
-export function renderCommunityIdCardCanvas(member: Registration): HTMLCanvasElement {
+export async function renderCommunityIdCardCanvas(member: Registration): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
@@ -46,30 +49,65 @@ export function renderCommunityIdCardCanvas(member: Registration): HTMLCanvasEle
   ctx.lineTo(CARD_WIDTH - 40, 88);
   ctx.stroke();
 
+  if (member.photoUrl) {
+    try {
+      await drawCircularMemberPhoto(ctx, member.photoUrl, CARD_WIDTH / 2, PHOTO_CENTER_Y, PHOTO_RADIUS);
+    } catch {
+      drawPhotoPlaceholder(ctx, CARD_WIDTH / 2, PHOTO_CENTER_Y, PHOTO_RADIUS);
+    }
+  } else {
+    drawPhotoPlaceholder(ctx, CARD_WIDTH / 2, PHOTO_CENTER_Y, PHOTO_RADIUS);
+  }
+
   ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
   ctx.font = '11px Inter, sans-serif';
-  ctx.fillText('MEMBER NAME', CARD_WIDTH / 2, 175);
+  ctx.fillText('MEMBER NAME', CARD_WIDTH / 2, 248);
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 26px Inter, sans-serif';
+  ctx.font = 'bold 24px Inter, sans-serif';
   const nameLines = wrapCanvasText(ctx, member.fullName, CARD_WIDTH - 120);
   nameLines.slice(0, 2).forEach((line, index) => {
-    ctx.fillText(line, CARD_WIDTH / 2, 200 + index * 32);
+    ctx.fillText(line, CARD_WIDTH / 2, 274 + index * 30);
   });
 
   ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
   ctx.font = '11px Inter, sans-serif';
-  ctx.fillText('COMMUNITY ID', CARD_WIDTH / 2, 300);
+  ctx.fillText('COMMUNITY ID', CARD_WIDTH / 2, 332);
 
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 20px monospace';
-  const idLines = wrapCanvasText(ctx, member.communityId, CARD_WIDTH - 80, 'bold 20px monospace');
+  ctx.font = 'bold 18px monospace';
+  const idLines = wrapCanvasText(ctx, member.communityId, CARD_WIDTH - 80, 'bold 18px monospace');
   idLines.slice(0, 2).forEach((line, index) => {
-    ctx.fillText(line, CARD_WIDTH / 2, 332 + index * 26);
+    ctx.fillText(line, CARD_WIDTH / 2, 358 + index * 24);
   });
 
   return canvas;
+}
+
+function drawPhotoPlaceholder(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number
+): void {
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.font = 'bold 28px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', centerX, centerY);
+  ctx.textBaseline = 'alphabetic';
 }
 
 function wrapCanvasText(
@@ -97,16 +135,16 @@ function wrapCanvasText(
   return lines.length ? lines : [text];
 }
 
-export function downloadIdCardPng(member: Registration): void {
-  const canvas = renderCommunityIdCardCanvas(member);
+export async function downloadIdCardPng(member: Registration): Promise<void> {
+  const canvas = await renderCommunityIdCardCanvas(member);
   const link = document.createElement('a');
   link.download = `GNC_ID_${member.communityId}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
 
-export function downloadIdCardPdf(member: Registration): void {
-  const canvas = renderCommunityIdCardCanvas(member);
+export async function downloadIdCardPdf(member: Registration): Promise<void> {
+  const canvas = await renderCommunityIdCardCanvas(member);
   const imgData = canvas.toDataURL('image/png');
   const doc = new jsPDF({
     orientation: 'landscape',

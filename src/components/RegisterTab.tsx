@@ -76,6 +76,7 @@ export default function RegisterTab({
   const [city, setCity] = useState('');
   const [village, setVillage] = useState('');
   const [relationship, setRelationship] = useState<Registration['relationship']>('Self');
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>();
 
   // Success flow state
   const [registeredData, setRegisteredData] = useState<Registration | null>(null);
@@ -163,6 +164,7 @@ export default function RegisterTab({
       city,
       village: village || undefined,
       gotra: gotra || undefined,
+      photoUrl,
     });
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -188,6 +190,7 @@ export default function RegisterTab({
       case 'city': setCity(String(value)); break;
       case 'village': setVillage(String(value ?? '')); break;
       case 'relationship': setRelationship(value as Registration['relationship']); break;
+      case 'photoUrl': setPhotoUrl(value as string | undefined); break;
     }
     setErrors((prev) => {
       const next = { ...prev };
@@ -232,6 +235,7 @@ export default function RegisterTab({
       relationship,
       registrationDate: new Date().toISOString().slice(0, 10),
       isVerified: mobileVerified,
+      photoUrl,
     };
 
     onRegisterSubmit(registrationData);
@@ -252,21 +256,13 @@ export default function RegisterTab({
   const generatePngDownload = () => {
     if (!registeredData) return;
     setIsGenerating(true);
-    try {
-      downloadIdCardPng(registeredData);
-    } finally {
-      setIsGenerating(false);
-    }
+    void downloadIdCardPng(registeredData).finally(() => setIsGenerating(false));
   };
 
   const downloadPdfCard = () => {
     if (!registeredData) return;
     setIsGenerating(true);
-    try {
-      downloadIdCardPdf(registeredData);
-    } finally {
-      setIsGenerating(false);
-    }
+    void downloadIdCardPdf(registeredData).finally(() => setIsGenerating(false));
   };
 
   return (
@@ -355,6 +351,7 @@ export default function RegisterTab({
                 city,
                 village: village || undefined,
                 relationship,
+                photoUrl,
               }}
               onChange={updateFormField}
               errors={errors}
