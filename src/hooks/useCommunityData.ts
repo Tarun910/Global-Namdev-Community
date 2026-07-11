@@ -16,6 +16,14 @@ import * as membersRepo from '../lib/supabase/repositories/members';
 import * as updatesRepo from '../lib/supabase/repositories/updates';
 import * as forumRepo from '../lib/supabase/repositories/forum';
 
+function isMemberRegistrationBulletin(update: CommunityUpdate): boolean {
+  return update.id.startsWith('reg-notif-') || update.title === 'New Member Registered!';
+}
+
+function filterBulletinFeed(updates: CommunityUpdate[]): CommunityUpdate[] {
+  return updates.filter((update) => !isMemberRegistrationBulletin(update));
+}
+
 function loadLocalRegistrations(): Registration[] {
   try {
     const saved = localStorage.getItem('gnc_registrations');
@@ -70,7 +78,7 @@ export function useCommunityData(): UseCommunityDataResult {
     usingSupabase ? [] : loadLocalRegistrations()
   );
   const [updates, setUpdates] = useState<CommunityUpdate[]>(() =>
-    usingSupabase ? [] : loadCommunityUpdates()
+    filterBulletinFeed(usingSupabase ? [] : loadCommunityUpdates())
   );
   const [discussions, setDiscussions] = useState<ForumDiscussion[]>(() =>
     usingSupabase ? [] : INITIAL_DISCUSSIONS
@@ -94,7 +102,7 @@ export function useCommunityData(): UseCommunityDataResult {
       ]);
 
       setRegistrations(members);
-      setUpdates(applyBulletinReadState(communityUpdates));
+      setUpdates(applyBulletinReadState(filterBulletinFeed(communityUpdates)));
       setDiscussions(forumDiscussions);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load community data.';
@@ -185,19 +193,8 @@ export function useCommunityData(): UseCommunityDataResult {
       } else {
         setRegistrations((prev) => [newReg, ...prev]);
       }
-
-      const notification: CommunityUpdate = {
-        id: `reg-notif-${Date.now()}`,
-        category: 'announcement',
-        title: 'New Member Registered!',
-        message: `Hearty welcome to ${newReg.fullName} from ${newReg.city}, ${newReg.state} as a verified member of the GNC member directory.`,
-        time: 'Just now',
-        isRead: false,
-      };
-
-      await handlePublishUpdate(notification);
     },
-    [usingSupabase, handlePublishUpdate]
+    [usingSupabase]
   );
 
   const handleDeleteRegistration = useCallback(

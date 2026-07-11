@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion } from 'motion/react';
 import { ChartPie, ChartBar, TrendingUp } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
@@ -12,6 +13,7 @@ import {
   buildOccupationChartData,
   buildGotraChartData,
 } from '../lib/memberGeoStats';
+import { fadeInUp, scaleIn, staggerContainer, staggerItem } from '../lib/motionPresets';
 
 interface StatsProps {
   registrations: Registration[];
@@ -80,7 +82,7 @@ export default function Stats({ registrations, language }: StatsProps) {
     <section className="bg-slate-50 py-16 border-y border-slate-200/60">
       <div className="max-w-7xl mx-auto px-6 space-y-16">
 
-        <div className="text-center max-w-2xl mx-auto space-y-4">
+        <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-primary text-xs font-semibold">
             <TrendingUp className="w-3.5 h-3.5" />
             {t.liveMemberStats}
@@ -91,12 +93,12 @@ export default function Stats({ registrations, language }: StatsProps) {
           <p className="font-sans text-xs text-slate-500 leading-relaxed">
             {t.demographicsSubtitle}
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <motion.div {...staggerContainer} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
           {/* State / region distribution — real registration data */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <motion.div {...staggerItem} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4 hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start pb-2 border-b border-slate-100 gap-3">
               <div className="space-y-0.5">
                 <h4 className="font-sans text-sm font-bold text-slate-900 flex items-center gap-1.5">
@@ -164,10 +166,10 @@ export default function Stats({ registrations, language }: StatsProps) {
                 <RegistrationFootnote count={registrations.length} label={t.statsBasedOnRegistrations} />
               </>
             )}
-          </div>
+          </motion.div>
 
           {/* Professional sector — real registration data */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+          <motion.div {...staggerItem} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4 hover:shadow-md transition-shadow">
             <div className="pb-2 border-b border-slate-100 space-y-0.5">
               <h4 className="font-sans text-sm font-bold text-slate-900 flex items-center gap-1.5">
                 <ChartPie className="w-4 h-4 text-primary" />
@@ -231,11 +233,11 @@ export default function Stats({ registrations, language }: StatsProps) {
                 <RegistrationFootnote count={registrations.length} label={t.statsBasedOnRegistrations} />
               </>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Gotra distribution — real registration data */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+        <motion.div {...scaleIn} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4 hover:shadow-md transition-shadow">
           <div className="pb-2 border-b border-slate-100 space-y-0.5">
             <h4 className="font-sans text-sm font-bold text-slate-900">{t.clanGotraDistribution}</h4>
             <p className="text-[10px] text-slate-500">{t.clanGotraSub}</p>
@@ -292,7 +294,7 @@ export default function Stats({ registrations, language }: StatsProps) {
               <RegistrationFootnote count={registrations.length} label={t.statsBasedOnRegistrations} />
             </>
           )}
-        </div>
+        </motion.div>
 
       </div>
     </section>

@@ -6,6 +6,7 @@ import {
   Search, Trash2, Megaphone, Users, CheckCircle2, UserSearch,
   Pencil, X, ImagePlus, UserPlus, Plus, LogOut, UserCog,
 } from 'lucide-react';
+import Logo from './Logo';
 import VerifyTab from './VerifyTab';
 import ConfirmDialog from './ConfirmDialog';
 import RegistrationDetailsForm, { RegistrationFormValues } from './RegistrationDetailsForm';
@@ -13,6 +14,11 @@ import MobileWithCountryCode from './MobileWithCountryCode';
 import { AdminSubTab } from '../lib/adminNav';
 import { computeMemberDashboardStats } from '../lib/memberGeoStats';
 import { validateRegistrationFields } from '../lib/validateRegistration';
+import {
+  validateAddAdminFields,
+  validateAdminLoginFields,
+  validateBulletinFields,
+} from '../lib/validateForms';
 import { generateNextCommunityId } from '../lib/communityId';
 import { getDialCodeForCountry } from '../lib/countries';
 import { findRegistrationByMobile, isValidLocalMobile } from '../lib/demoAuth';
@@ -158,6 +164,7 @@ export default function AdminTab({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [loginFieldErrors, setLoginFieldErrors] = useState<Record<string, string>>({});
 
   // Tab State inside Admin panel (synced with header / bottom nav)
   const [dbSearch, setDbSearch] = useState('');
@@ -167,6 +174,7 @@ export default function AdminTab({
   const [bulletinImageUrl, setBulletinImageUrl] = useState<string | undefined>();
   const [editingBulletinId, setEditingBulletinId] = useState<string | null>(null);
   const [imageError, setImageError] = useState('');
+  const [bulletinFieldErrors, setBulletinFieldErrors] = useState<Record<string, string>>({});
   const [formSuccess, setFormSuccess] = useState(false);
   const [formSuccessMessage, setFormSuccessMessage] = useState('');
 
@@ -185,6 +193,7 @@ export default function AdminTab({
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [newAdminPasswordConfirm, setNewAdminPasswordConfirm] = useState('');
   const [adminFormError, setAdminFormError] = useState('');
+  const [adminFieldErrors, setAdminFieldErrors] = useState<Record<string, string>>({});
   const [adminFormSuccess, setAdminFormSuccess] = useState('');
 
   useEffect(() => {
@@ -204,6 +213,10 @@ export default function AdminTab({
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const fieldErrors = validateAdminLoginFields(username, password);
+    setLoginFieldErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) return;
+
     setLoginLoading(true);
     setLoginError('');
     try {
@@ -284,7 +297,7 @@ export default function AdminTab({
   };
 
   const handleMemberCountryChange = (nextCountry: string) => {
-    updateMemberFormField('country', nextCountry);
+    setMemberForm((prev) => ({ ...prev, country: nextCountry, state: '' }));
     setMemberDialCode(getDialCodeForCountry(nextCountry));
   };
 
@@ -380,13 +393,20 @@ export default function AdminTab({
     e.preventDefault();
     setAdminFormError('');
     setAdminFormSuccess('');
+    setAdminFieldErrors({});
 
     if (!adminSession?.isSuperAdmin) {
       setAdminFormError('Only the super admin can add other admins.');
       return;
     }
-    if (newAdminPassword !== newAdminPasswordConfirm) {
-      setAdminFormError('Passwords do not match.');
+
+    const fieldErrors = validateAddAdminFields(
+      newAdminUsername,
+      newAdminPassword,
+      newAdminPasswordConfirm
+    );
+    if (Object.keys(fieldErrors).length > 0) {
+      setAdminFieldErrors(fieldErrors);
       return;
     }
 
@@ -444,7 +464,9 @@ export default function AdminTab({
 
   const handlePublishBulletin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bulletinTitle.trim() || !bulletinMessage.trim()) return;
+    const fieldErrors = validateBulletinFields(bulletinTitle, bulletinMessage);
+    setBulletinFieldErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) return;
 
     const payload = {
       category: bulletinCategory,
@@ -476,6 +498,7 @@ export default function AdminTab({
     }
 
     resetBulletinForm();
+    setBulletinFieldErrors({});
     setFormSuccess(true);
     setTimeout(() => setFormSuccess(false), 3000);
   };
@@ -489,8 +512,8 @@ export default function AdminTab({
           className="bg-white border border-slate-200/80 p-8 rounded-3xl shadow-sm space-y-6"
         >
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 bg-orange-50 text-primary border border-orange-200 rounded-full flex items-center justify-center mx-auto shadow-sm">
-              <Lock className="w-5 h-5 stroke-2" />
+            <div className="flex justify-center">
+              <Logo size="md" showText={false} />
             </div>
             <h2 className="font-sans text-xl font-bold text-slate-900">Admin Portal Secure Gateway</h2>
             <p className="text-xs text-slate-500">
@@ -503,24 +526,46 @@ export default function AdminTab({
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Username</label>
               <input
                 type="text"
-                required
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setLoginFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.username;
+                    return next;
+                  });
+                }}
                 placeholder="Enter admin username..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white"
+                className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white ${
+                  loginFieldErrors.username ? 'border-red-400' : 'border-slate-200'
+                }`}
               />
+              {loginFieldErrors.username && (
+                <p className="text-[10px] text-red-500 font-medium">{loginFieldErrors.username}</p>
+              )}
             </div>
 
             <div className="space-y-1">
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Password</label>
               <input
                 type="password"
-                required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setLoginFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.password;
+                    return next;
+                  });
+                }}
                 placeholder="Enter secure password..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white"
+                className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white ${
+                  loginFieldErrors.password ? 'border-red-400' : 'border-slate-200'
+                }`}
               />
+              {loginFieldErrors.password && (
+                <p className="text-[10px] text-red-500 font-medium">{loginFieldErrors.password}</p>
+              )}
             </div>
 
             {loginError && (
@@ -852,24 +897,46 @@ export default function AdminTab({
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Notice Title</label>
                 <input
                   type="text"
-                  required
                   value={bulletinTitle}
-                  onChange={(e) => setBulletinTitle(e.target.value)}
+                  onChange={(e) => {
+                    setBulletinTitle(e.target.value);
+                    setBulletinFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.bulletinTitle;
+                      return next;
+                    });
+                  }}
                   placeholder="e.g. National Merit Scholarship Form Open"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none"
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none ${
+                    bulletinFieldErrors.bulletinTitle ? 'border-red-400' : 'border-slate-200'
+                  }`}
                 />
+                {bulletinFieldErrors.bulletinTitle && (
+                  <p className="text-[10px] text-red-500 font-medium">{bulletinFieldErrors.bulletinTitle}</p>
+                )}
               </div>
 
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Detailed Message</label>
                 <textarea
-                  required
                   rows={4}
                   value={bulletinMessage}
-                  onChange={(e) => setBulletinMessage(e.target.value)}
+                  onChange={(e) => {
+                    setBulletinMessage(e.target.value);
+                    setBulletinFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.bulletinMessage;
+                      return next;
+                    });
+                  }}
                   placeholder="Provide precise details, requirements, links or dates..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none resize-none"
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none resize-none ${
+                    bulletinFieldErrors.bulletinMessage ? 'border-red-400' : 'border-slate-200'
+                  }`}
                 />
+                {bulletinFieldErrors.bulletinMessage && (
+                  <p className="text-[10px] text-red-500 font-medium">{bulletinFieldErrors.bulletinMessage}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -997,36 +1064,69 @@ export default function AdminTab({
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Username</label>
                 <input
                   type="text"
-                  required
                   value={newAdminUsername}
-                  onChange={(e) => setNewAdminUsername(e.target.value)}
+                  onChange={(e) => {
+                    setNewAdminUsername(e.target.value);
+                    setAdminFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.username;
+                      return next;
+                    });
+                  }}
                   placeholder="e.g. chapter_admin_mumbai"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none"
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none ${
+                    adminFieldErrors.username ? 'border-red-400' : 'border-slate-200'
+                  }`}
                 />
+                {adminFieldErrors.username && (
+                  <p className="text-[10px] text-red-500 font-medium">{adminFieldErrors.username}</p>
+                )}
               </div>
 
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Password</label>
                 <input
                   type="password"
-                  required
                   value={newAdminPassword}
-                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  onChange={(e) => {
+                    setNewAdminPassword(e.target.value);
+                    setAdminFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.password;
+                      return next;
+                    });
+                  }}
                   placeholder="Minimum 6 characters"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none"
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none ${
+                    adminFieldErrors.password ? 'border-red-400' : 'border-slate-200'
+                  }`}
                 />
+                {adminFieldErrors.password && (
+                  <p className="text-[10px] text-red-500 font-medium">{adminFieldErrors.password}</p>
+                )}
               </div>
 
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Confirm Password</label>
                 <input
                   type="password"
-                  required
                   value={newAdminPasswordConfirm}
-                  onChange={(e) => setNewAdminPasswordConfirm(e.target.value)}
+                  onChange={(e) => {
+                    setNewAdminPasswordConfirm(e.target.value);
+                    setAdminFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.passwordConfirm;
+                      return next;
+                    });
+                  }}
                   placeholder="Re-enter password"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none"
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none ${
+                    adminFieldErrors.passwordConfirm ? 'border-red-400' : 'border-slate-200'
+                  }`}
                 />
+                {adminFieldErrors.passwordConfirm && (
+                  <p className="text-[10px] text-red-500 font-medium">{adminFieldErrors.passwordConfirm}</p>
+                )}
               </div>
 
               {adminFormError && (

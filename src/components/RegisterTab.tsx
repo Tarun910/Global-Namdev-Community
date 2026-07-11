@@ -151,13 +151,18 @@ export default function RegisterTab({
     const tempErrors = validateRegistrationFields({
       fullName,
       fathersName,
+      mothersName: mothersName || undefined,
       dobOrAge,
       mobileNumber,
+      email: email || undefined,
       education,
       occupation,
+      country,
       state,
       district,
       city,
+      village: village || undefined,
+      gotra: gotra || undefined,
     });
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -193,6 +198,7 @@ export default function RegisterTab({
 
   const handleCountryChange = (nextCountry: string) => {
     setCountry(nextCountry);
+    setState('');
     setMobileCountryCode(getDialCodeForCountry(nextCountry));
   };
 

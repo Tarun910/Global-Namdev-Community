@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Registration } from '../types';
 import { Search, ShieldCheck, AlertCircle, Calendar, MapPin, CheckCircle2, User } from 'lucide-react';
 
+import { validateVerifyQueryField } from '../lib/validateForms';
+
 interface VerifyTabProps {
   registrations: Registration[];
   embedded?: boolean;
@@ -13,20 +15,30 @@ export default function VerifyTab({ registrations, embedded = false }: VerifyTab
   const [searchResult, setSearchResult] = useState<Registration | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    const errors = validateVerifyQueryField(searchQuery);
+    if (errors.searchQuery) {
+      setSearchError(errors.searchQuery);
+      return;
+    }
 
+    setSearchError('');
     setIsSearching(true);
     setHasSearched(false);
+
+    const query = searchQuery.trim();
+    const normalizedMobile = query.replace(/\D/g, '');
 
     // Simulated quick search
     setTimeout(() => {
       const found = registrations.find(
-        (r) => 
-          r.communityId.toLowerCase() === searchQuery.trim().toLowerCase() ||
-          r.mobileNumber === searchQuery.trim()
+        (r) =>
+          r.communityId.toLowerCase() === query.toLowerCase() ||
+          r.mobileNumber === query ||
+          (normalizedMobile.length >= 6 && r.mobileNumber === normalizedMobile)
       );
       setSearchResult(found || null);
       setIsSearching(false);
@@ -51,24 +63,31 @@ export default function VerifyTab({ registrations, embedded = false }: VerifyTab
       </div>
 
       {/* Verification Input form */}
-      <form onSubmit={handleVerify} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            required
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Enter Community ID or Mobile Number..."
-            className="w-full bg-transparent pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
-          />
+      <form onSubmit={handleVerify} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchError('');
+              }}
+              placeholder="Enter Community ID or Mobile Number..."
+              className={`w-full bg-transparent pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none ${
+                searchError ? 'text-red-600' : ''
+              }`}
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-2"
+          >
+            {isSearching ? <RefreshCwIcon className="w-3.5 h-3.5 animate-spin" /> : 'Verify Credentials'}
+          </button>
         </div>
-        <button
-          type="submit"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-2"
-        >
-          {isSearching ? <RefreshCwIcon className="w-3.5 h-3.5 animate-spin" /> : 'Verify Credentials'}
-        </button>
+        {searchError && <p className="text-[10px] text-red-500 font-medium px-1">{searchError}</p>}
       </form>
 
       {/* Skeletons while loading */}

@@ -1,9 +1,11 @@
 import {
   User, BookOpen, Briefcase, MapPin, Phone, Mail,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Registration } from '../types';
 import { TranslationStrings } from '../lib/translations';
 import { COUNTRY_NAMES } from '../lib/countries';
+import { getStatesForCountryAsync } from '../lib/regions';
 
 export type RegistrationFormValues = Pick<
   Registration,
@@ -51,6 +53,26 @@ export default function RegistrationDetailsForm({
   communityId,
   onCountryChange,
 }: RegistrationDetailsFormProps) {
+  const [stateOptions, setStateOptions] = useState<string[]>([]);
+  const [statesLoading, setStatesLoading] = useState(false);
+  const showStateDropdown = stateOptions.length > 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatesLoading(true);
+
+    void getStatesForCountryAsync(values.country).then((states) => {
+      if (!cancelled) {
+        setStateOptions(states);
+        setStatesLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [values.country]);
+
   return (
     <div className="space-y-6">
       {communityId && (
@@ -107,8 +129,9 @@ export default function RegistrationDetailsForm({
               value={values.mothersName ?? ''}
               onChange={(e) => onChange('mothersName', e.target.value || undefined)}
               placeholder={t.formPhMothersName}
-              className={inputClass(false)}
+              className={inputClass(Boolean(errors.mothersName))}
             />
+            {errors.mothersName && <p className="text-[10px] text-red-500 font-medium">{errors.mothersName}</p>}
           </div>
         </div>
 
@@ -127,7 +150,7 @@ export default function RegistrationDetailsForm({
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formDobAge}</label>
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formDobAge} *</label>
             <input
               type="text"
               value={values.dobOrAge}
@@ -183,9 +206,10 @@ export default function RegistrationDetailsForm({
                 value={values.email ?? ''}
                 onChange={(e) => onChange('email', e.target.value || undefined)}
                 placeholder={t.formPhEmail}
-                className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary"
+                className={`${inputClass(Boolean(errors.email))} pl-9`}
               />
             </div>
+            {errors.email && <p className="text-[10px] text-red-500 font-medium">{errors.email}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -195,8 +219,9 @@ export default function RegistrationDetailsForm({
               value={values.gotra ?? ''}
               onChange={(e) => onChange('gotra', e.target.value || undefined)}
               placeholder={t.formPhGotra}
-              className={inputClass(false)}
+              className={inputClass(Boolean(errors.gotra))}
             />
+            {errors.gotra && <p className="text-[10px] text-red-500 font-medium">{errors.gotra}</p>}
           </div>
         </div>
       </div>
@@ -209,7 +234,7 @@ export default function RegistrationDetailsForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formEducation}</label>
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formEducation} *</label>
             <div className="relative">
               <BookOpen className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -224,7 +249,7 @@ export default function RegistrationDetailsForm({
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formOccupationLabel}</label>
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formOccupationLabel} *</label>
             <div className="relative">
               <Briefcase className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -247,15 +272,16 @@ export default function RegistrationDetailsForm({
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formCountryLabel}</label>
+          <div className="space-y-1.5 min-w-0">
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formCountryLabel} *</label>
             <select
               value={values.country}
               onChange={(e) => {
                 onChange('country', e.target.value);
+                onChange('state', '');
                 onCountryChange?.(e.target.value);
               }}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              className={inputClass(Boolean(errors.country))}
             >
               {COUNTRY_NAMES.map((name) => (
                 <option key={name} value={name}>
@@ -263,17 +289,34 @@ export default function RegistrationDetailsForm({
                 </option>
               ))}
             </select>
+            {errors.country && <p className="text-[10px] text-red-500 font-medium">{errors.country}</p>}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 min-w-0">
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formState} *</label>
-            <input
-              type="text"
-              value={values.state}
-              onChange={(e) => onChange('state', e.target.value)}
-              placeholder={t.formPhState}
-              className={inputClass(Boolean(errors.state))}
-            />
+            {showStateDropdown ? (
+              <select
+                value={values.state}
+                onChange={(e) => onChange('state', e.target.value)}
+                disabled={statesLoading}
+                className={inputClass(Boolean(errors.state))}
+              >
+                <option value="">{statesLoading ? 'Loading states…' : 'Select state'}</option>
+                {stateOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={values.state}
+                onChange={(e) => onChange('state', e.target.value)}
+                placeholder={t.formPhState}
+                className={inputClass(Boolean(errors.state))}
+              />
+            )}
             {errors.state && <p className="text-[10px] text-red-500 font-medium">{errors.state}</p>}
           </div>
 
@@ -310,8 +353,9 @@ export default function RegistrationDetailsForm({
               value={values.village ?? ''}
               onChange={(e) => onChange('village', e.target.value || undefined)}
               placeholder={t.formPhVillage}
-              className={inputClass(false)}
+              className={inputClass(Boolean(errors.village))}
             />
+            {errors.village && <p className="text-[10px] text-red-500 font-medium">{errors.village}</p>}
           </div>
         </div>
       </div>

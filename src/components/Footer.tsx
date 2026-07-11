@@ -1,8 +1,12 @@
 import { ReactNode } from 'react';
-import { Globe, ShieldCheck } from 'lucide-react';
+import { motion } from 'motion/react';
+import { ShieldCheck } from 'lucide-react';
 import { Language } from '../lib/languages';
 import { getTranslations } from '../lib/translations';
 import { tabToPath, AppRoute } from '../lib/routes';
+import { SUPPORT_EMAIL, ANJANEYAX_COMPANY_NAME, ANJANEYAX_WEBSITE_URL } from '../lib/contact';
+import Logo from './Logo';
+import { fadeInUp } from '../lib/motionPresets';
 
 interface FooterProps {
   navigate: (tab: string) => void;
@@ -39,13 +43,10 @@ export default function Footer({ navigate, language }: FooterProps) {
   const t = getTranslations(language);
 
   return (
-    <footer className="w-full py-16 bg-slate-50 border-t border-slate-200/60 mt-16 text-slate-800">
+    <motion.footer {...fadeInUp} className="w-full py-16 bg-slate-50 border-t border-slate-200/60 mt-16 text-slate-800">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 px-6 max-w-7xl mx-auto">
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Globe className="text-primary w-5 h-5" />
-            <h2 className="font-sans text-lg font-bold text-primary">Namdev Global Community</h2>
-          </div>
+          <Logo size="md" textClassName="text-primary" />
           <p className="text-slate-600 text-xs leading-relaxed max-w-xs">{t.heroSub}</p>
         </div>
 
@@ -89,10 +90,10 @@ export default function Footer({ navigate, language }: FooterProps) {
             </li>
             <li>
               <a
-                href="mailto:support@globalnamdevcommunity.org"
-                className="text-xs text-slate-500 hover:text-primary transition-colors cursor-pointer text-left block w-fit"
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="text-xs text-slate-500 hover:text-primary transition-colors cursor-pointer text-left block w-fit break-all max-w-full"
               >
-                support@globalnamdevcommunity.org
+                {SUPPORT_EMAIL}
               </a>
             </li>
           </ul>
@@ -100,14 +101,25 @@ export default function Footer({ navigate, language }: FooterProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-200/60 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <p className="text-slate-500 text-xs leading-relaxed">
-          © 2026 Global Namdev Community. All rights reserved.
-        </p>
+        <div className="text-slate-500 text-xs leading-relaxed">
+          <p>{t.footerCopyright}</p>
+          <p>
+            {t.footerRightsReserved}{' '}
+            <a
+              href={ANJANEYAX_WEBSITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2"
+            >
+              {ANJANEYAX_COMPANY_NAME}
+            </a>
+          </p>
+        </div>
         <div className="inline-flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60 w-fit">
           <ShieldCheck className="w-3.5 h-3.5 text-primary" />
           <span className="font-geist text-[10px] font-bold text-slate-700">Community Shield Active</span>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }

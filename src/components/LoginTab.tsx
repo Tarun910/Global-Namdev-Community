@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { motion } from 'motion/react';
 import { LogIn } from 'lucide-react';
 import { Registration } from '../types';
 import {
@@ -15,6 +16,7 @@ import Msg91CaptchaMount from './Msg91CaptchaMount';
 import MobileWithCountryCode from './MobileWithCountryCode';
 import { Language } from '../lib/languages';
 import { getTranslations } from '../lib/translations';
+import { pageEnter, tapScale } from '../lib/motionPresets';
 
 interface LoginTabProps {
   registrations: Registration[];
@@ -164,16 +166,24 @@ export default function LoginTab({
   }
 
   return (
-    <div className="w-full max-w-md mx-auto min-w-0 py-6 space-y-8">
-      <div className="text-center space-y-2">
+    <motion.div {...pageEnter} className="w-full max-w-md mx-auto min-w-0 py-6 space-y-8">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
+        className="text-center space-y-2"
+      >
         <div className="w-14 h-14 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-center mx-auto">
           <LogIn className="w-7 h-7 text-primary" />
         </div>
         <h2 className="font-sans text-2xl md:text-3xl font-bold text-slate-900">{t.loginTitle}</h2>
         <p className="text-xs text-slate-500 max-w-sm mx-auto">{t.loginSub}</p>
-      </div>
+      </motion.div>
 
-      <form
+      <motion.form
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.12 }}
         onSubmit={handleSendOtp}
         className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4 w-full min-w-0"
       >
@@ -188,14 +198,15 @@ export default function LoginTab({
 
         {widgetMode && <Msg91CaptchaMount />}
 
-        <button
+        <motion.button
           type="submit"
           disabled={isSendingOtp}
-          className="w-full py-3 bg-primary text-white font-geist text-sm font-bold rounded-xl shadow-md hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer"
+          {...tapScale}
+          className="w-full py-3 bg-primary text-white font-geist text-sm font-bold rounded-xl shadow-md hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
         >
           {isSendingOtp ? t.otpSending : t.loginSendOtp}
-        </button>
-      </form>
+        </motion.button>
+      </motion.form>
 
       <p className="text-center text-xs text-slate-500">
         {t.loginNotRegistered}{' '}
@@ -207,6 +218,6 @@ export default function LoginTab({
           {t.loginRegisterHere}
         </button>
       </p>
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,4 @@
 import { forwardRef } from 'react';
-import { Award, ShieldCheck } from 'lucide-react';
 import { Registration } from '../types';
 
 interface IdCardPreviewProps {
@@ -16,8 +15,8 @@ const IdCardPreview = forwardRef<HTMLDivElement, IdCardPreviewProps>(function Id
       data-id-card-export
       className="relative w-full max-w-lg mx-auto min-h-[248px] rounded-3xl shadow-2xl border border-white/20 text-white saffron-gradient p-5 sm:p-6 flex flex-col overflow-hidden"
     >
-      <div className="absolute bottom-0 right-0 w-36 h-36 translate-x-1/4 translate-y-1/4 opacity-10 bg-white rounded-full pointer-events-none flex items-center justify-center">
-        <ShieldCheck className="w-24 h-24 stroke-1" />
+      <div className="absolute bottom-0 right-0 w-36 h-36 translate-x-1/4 translate-y-1/4 opacity-10 pointer-events-none flex items-center justify-center">
+        <img src="/logo.png" alt="" className="w-28 h-28 object-contain" />
       </div>
 
       <div className="relative z-10 shrink-0 pb-3 border-b border-white/15 pr-[4.5rem]">
@@ -25,8 +24,8 @@ const IdCardPreview = forwardRef<HTMLDivElement, IdCardPreviewProps>(function Id
           Verified
         </div>
 
-        <p className="font-geist text-[8px] sm:text-[9px] uppercase tracking-wide text-white/80 font-bold flex items-center gap-1 leading-none">
-          <Award className="w-3 h-3 text-white shrink-0" />
+        <p className="font-geist text-[8px] sm:text-[9px] uppercase tracking-wide text-white/80 font-bold flex items-center gap-1.5 leading-none">
+          <img src="/logo.png" alt="" className="w-5 h-5 object-contain shrink-0" />
           <span className="truncate">Global Namdev Community</span>
         </p>
         <h4 className="font-sans text-[10px] sm:text-[11px] font-bold tracking-tight text-white mt-1.5 leading-none truncate">

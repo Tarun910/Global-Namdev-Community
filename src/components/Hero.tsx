@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, ShieldCheck, UserCheck, Users, LogIn } from 'lucide-react';
 import { getTranslations } from '../lib/translations';
 import { Language } from '../lib/languages';
+import { tapScale } from '../lib/motionPresets';
 
 interface HeroProps {
   onRegisterSelf: () => void;
@@ -117,27 +118,30 @@ export default function Hero({
           className="flex flex-col gap-3 max-w-3xl mx-auto pt-1 sm:pt-2"
         >
           <div className="flex flex-col items-stretch justify-center gap-2 w-full max-w-xs mx-auto">
-            <button
+            <motion.button
+              {...tapScale}
               onClick={onRegisterSelf}
-              className="w-full px-3 py-2.5 bg-primary text-white hover:bg-orange-600 rounded-xl font-geist text-[10px] sm:text-xs font-bold shadow-md hover:shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-1 group cursor-pointer"
+              className="w-full px-3 py-2.5 bg-primary text-white hover:bg-orange-600 rounded-xl font-geist text-[10px] sm:text-xs font-bold shadow-md hover:shadow-primary/20 transition-colors flex items-center justify-center gap-1 group cursor-pointer"
             >
               <UserCheck className="w-3.5 h-3.5 text-white shrink-0" />
               <span>{t.registerSelf}</span>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              {...tapScale}
               onClick={onRegisterFamily}
-              className="w-full px-3 py-2.5 bg-white hover:bg-orange-50/50 border border-orange-200 text-slate-800 hover:text-primary rounded-xl font-geist text-[10px] sm:text-xs font-bold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full px-3 py-2.5 bg-white hover:bg-orange-50/50 border border-orange-200 text-slate-800 hover:text-primary rounded-xl font-geist text-[10px] sm:text-xs font-bold shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer"
             >
               <Users className="w-3.5 h-3.5 text-primary shrink-0" />
               <span>{t.registerFamily}</span>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              {...tapScale}
               onClick={onLogin}
-              className="w-full px-3 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-geist text-[10px] sm:text-xs font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full px-3 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-geist text-[10px] sm:text-xs font-bold shadow-md transition-colors flex items-center justify-center gap-1 cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5 text-orange-400 shrink-0" />
               <span>{t.login}</span>
-            </button>
+            </motion.button>
           </div>
 
           <div className="text-center">
@@ -158,14 +162,24 @@ export default function Hero({
           transition={{ duration: 1, delay: 0.5 }}
           className="pt-4 sm:pt-6 grid grid-cols-2 gap-3 max-w-sm mx-auto text-center"
         >
-          <div className="space-y-0.5">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.55 }}
+            className="space-y-0.5"
+          >
             <div className="font-sans text-base font-bold text-primary">100%</div>
             <div className="font-geist text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500">{t.verifiedMembers}</div>
-          </div>
-          <div className="space-y-0.5">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.62 }}
+            className="space-y-0.5"
+          >
             <div className="font-sans text-base font-bold text-primary">Digital</div>
             <div className="font-geist text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-500">{t.digitalIdCard}</div>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>

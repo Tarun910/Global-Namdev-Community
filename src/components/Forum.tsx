@@ -4,6 +4,7 @@ import { ForumDiscussion } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Language } from '../lib/languages';
 import { getTranslations, TranslationStrings } from '../lib/translations';
+import { validateForumCommentField, validateForumThreadFields } from '../lib/validateForms';
 
 interface ForumProps {
   discussions: ForumDiscussion[];
@@ -45,6 +46,8 @@ export default function Forum({
 
   // New comment text state
   const [commentText, setCommentText] = useState('');
+  const [threadErrors, setThreadErrors] = useState<Record<string, string>>({});
+  const [commentError, setCommentError] = useState('');
 
   // Get active discussion
   const activeDiscussion = discussions.find(d => d.id === activeDiscussionId);
@@ -52,24 +55,34 @@ export default function Forum({
   // Handle Thread Submission
   const handleCreateThread = (e: FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) return;
+    const errors = validateForumThreadFields(newTitle, newContent);
+    setThreadErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
-    onAddDiscussion(newTitle, newContent, newCategory);
+    onAddDiscussion(newTitle.trim(), newContent.trim(), newCategory);
     
     // Reset and close
     setNewTitle('');
     setNewContent('');
     setNewCategory('General');
+    setThreadErrors({});
     setIsCreatingThread(false);
   };
 
   // Handle Comment Submission
   const handleCreateComment = (e: FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim() || !activeDiscussionId) return;
+    if (!activeDiscussionId) return;
 
-    onAddComment(activeDiscussionId, commentText);
+    const errors = validateForumCommentField(commentText);
+    if (Object.keys(errors).length > 0) {
+      setCommentError(errors.comment);
+      return;
+    }
+
+    onAddComment(activeDiscussionId, commentText.trim());
     setCommentText('');
+    setCommentError('');
   };
 
   return (
@@ -155,11 +168,22 @@ export default function Forum({
                 <input
                   type="text"
                   value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
+                  onChange={(e) => {
+                    setNewTitle(e.target.value);
+                    setThreadErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.title;
+                      return next;
+                    });
+                  }}
                   placeholder={t.forumThreadTitlePh}
-                  required
-                  className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400 shadow-sm"
+                  className={`w-full bg-white border rounded-lg p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400 shadow-sm ${
+                    threadErrors.title ? 'border-red-400' : 'border-slate-200'
+                  }`}
                 />
+                {threadErrors.title && (
+                  <p className="text-[10px] text-red-500 font-medium">{threadErrors.title}</p>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -168,12 +192,23 @@ export default function Forum({
                 </label>
                 <textarea
                   value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
+                  onChange={(e) => {
+                    setNewContent(e.target.value);
+                    setThreadErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.content;
+                      return next;
+                    });
+                  }}
                   placeholder={t.forumMessagePh}
-                  required
                   rows={5}
-                  className="w-full bg-white border border-slate-200 rounded-lg p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none placeholder:text-slate-400 shadow-sm"
+                  className={`w-full bg-white border rounded-lg p-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none placeholder:text-slate-400 shadow-sm ${
+                    threadErrors.content ? 'border-red-400' : 'border-slate-200'
+                  }`}
                 />
+                {threadErrors.content && (
+                  <p className="text-[10px] text-red-500 font-medium">{threadErrors.content}</p>
+                )}
               </div>
 
               <div className="flex gap-2 justify-end pt-2">
@@ -288,21 +323,28 @@ export default function Forum({
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs shrink-0 select-none">
                 {userName[0].toUpperCase()}
               </div>
-              <div className="flex-1 flex gap-2">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder={t.forumCommentPh}
-                  required
-                  className="w-full bg-white border border-slate-200 rounded-lg px-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-slate-400 shadow-sm"
-                />
-                <button
-                  type="submit"
-                  className="p-2 bg-primary text-white rounded-lg hover:opacity-90 active:scale-95 transition-all cursor-pointer animate-none"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+              <div className="flex-1 space-y-1">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={commentText}
+                    onChange={(e) => {
+                      setCommentText(e.target.value);
+                      setCommentError('');
+                    }}
+                    placeholder={t.forumCommentPh}
+                    className={`w-full bg-white border rounded-lg px-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-slate-400 shadow-sm ${
+                      commentError ? 'border-red-400' : 'border-slate-200'
+                    }`}
+                  />
+                  <button
+                    type="submit"
+                    className="p-2 bg-primary text-white rounded-lg hover:opacity-90 active:scale-95 transition-all cursor-pointer animate-none"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+                {commentError && <p className="text-[10px] text-red-500 font-medium">{commentError}</p>}
               </div>
             </form>
           </motion.div>

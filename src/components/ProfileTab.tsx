@@ -48,6 +48,7 @@ export default function ProfileTab({ member, onUpdate, onLogout, language }: Pro
     setForm((prev) => ({
       ...prev,
       country,
+      state: '',
       mobileCountryCode: getDialCodeForCountry(country),
     }));
   };

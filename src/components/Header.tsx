@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { INDIAN_LANGUAGES, Language } from '../lib/languages';
 import { getTranslations } from '../lib/translations';
 import { AdminSubTab } from '../lib/adminNav';
+import Logo from './Logo';
 
 interface HeaderProps {
   activeTab: string;
@@ -56,14 +57,12 @@ export default function Header({
               setActiveTab('home');
             }
           }}
-          className="flex items-center gap-1.5 cursor-pointer select-none group min-w-0 shrink"
+          className="cursor-pointer select-none group min-w-0 shrink"
         >
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xs shadow-md group-hover:scale-105 transition-all shrink-0">
-            G
-          </div>
-          <span className="font-sans text-[11px] sm:text-xs md:text-sm font-bold text-slate-900 tracking-tight group-hover:text-primary transition-colors leading-tight truncate">
-            Namdev Global Community
-          </span>
+          <Logo
+            size="sm"
+            textClassName="group-hover:text-primary transition-colors"
+          />
         </div>
 
         <nav className="hidden lg:flex items-center gap-7">

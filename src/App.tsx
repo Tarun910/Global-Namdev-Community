@@ -31,6 +31,7 @@ import { pathToTab, navigateToTab, parseBulletinId, bulletinPath } from './lib/r
 import { computeMemberDashboardStats } from './lib/memberGeoStats';
 import { AdminSubTab } from './lib/adminNav';
 import { AdminSession, getAdminSession } from './lib/adminAuth';
+import { scaleIn, tapScale } from './lib/motionPresets';
 
 function getTransitionKey(tab: string, bulletinId: string | null): string {
   if (tab === 'login' || tab === 'profile') return 'auth';
@@ -225,8 +226,15 @@ export default function App() {
 
                 {/* Saffron Stripe invitation panel */}
                 <section className="py-6">
-                  <div className="bg-primary text-white p-8 md:p-12 rounded-3xl text-center space-y-5 saffron-gradient shadow-xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-44 h-44 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                  <motion.div
+                    {...scaleIn}
+                    className="bg-primary text-white p-8 md:p-12 rounded-3xl text-center space-y-5 saffron-gradient shadow-xl relative overflow-hidden"
+                  >
+                    <motion.div
+                      animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.7, 0.4] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute top-0 right-0 w-44 h-44 bg-white/5 rounded-full blur-2xl pointer-events-none"
+                    />
                     <div className="space-y-2 max-w-xl mx-auto">
                       <span className="text-[10px] uppercase font-geist font-bold tracking-widest text-orange-200">{t.memberDirectoryProgram}</span>
                       <h3 className="font-sans text-2xl md:text-3xl font-bold tracking-tight">{t.claimIdCardTitle}</h3>
@@ -236,14 +244,15 @@ export default function App() {
                     </div>
 
                     <div className="pt-2">
-                      <button
+                      <motion.button
+                        {...tapScale}
                         onClick={() => navigate('register')}
-                        className="px-6 py-3 bg-white text-primary font-geist text-xs font-bold rounded-xl shadow-md hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                        className="px-6 py-3 bg-white text-primary font-geist text-xs font-bold rounded-xl shadow-md hover:bg-slate-50 transition-colors cursor-pointer"
                       >
                         {t.registerProfileButton}
-                      </button>
+                      </motion.button>
                     </div>
-                  </div>
+                  </motion.div>
                 </section>
               </div>
             )}

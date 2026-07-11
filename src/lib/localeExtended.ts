@@ -69,8 +69,8 @@ export const extendedTranslations = {
     supportIntro:
       'We welcome your suggestions, bug reports, and ideas to improve the platform. Our volunteer development team reads every message and uses your feedback to prioritize updates.',
     supportDevLabel: 'Developer',
-    supportTeamName: 'GNC Platform Team',
-    supportTeamDesc: 'Community volunteers building the digital directory',
+    supportTeamName: 'AnjaneyaX Consulting Services',
+    supportTeamDesc: 'Technology partner supporting the Global Namdev Community platform',
     supportEmailLabel: 'Email',
     supportEmailDesc: 'Suggestions, feedback, and partnership inquiries',
     supportWhatLabel: 'What to send',
@@ -83,7 +83,8 @@ export const extendedTranslations = {
     supportResponseNote: 'Volunteer team — thank you for your patience',
     supportSendBtn: 'Send a Suggestion',
     supportGithubBtn: 'Open Source Contributions',
-    supportFooter: 'Built with care for the Global Namdev Community worldwide.',
+    supportFooter:
+      '© 2026 Global Namdev Community. All rights reserved by AnjaneyaX Consulting Services.',
 
     loginTitle: 'Member Login',
     loginSub:
@@ -312,8 +313,8 @@ export const extendedTranslations = {
     supportIntro:
       'हम प्लेटफ़ॉर्म में सुधार के लिए आपके सुझाव, बग रिपोर्ट और विचारों का स्वागत करते हैं। हमारी स्वयंसेवी विकास टीम हर संदेश पढ़ती है और आपकी प्रतिक्रिया से अपडेट को प्राथमिकता देती है।',
     supportDevLabel: 'डेवलपर',
-    supportTeamName: 'GNC प्लेटफ़ॉर्म टीम',
-    supportTeamDesc: 'डिजिटल निर्देशिका बना रहे समुदाय स्वयंसेवक',
+    supportTeamName: 'AnjaneyaX Consulting Services',
+    supportTeamDesc: 'वैश्विक नामदेव समुदाय प्लेटफ़ॉर्म का तकनीकी साझेदार',
     supportEmailLabel: 'ईमेल',
     supportEmailDesc: 'सुझाव, प्रतिक्रिया और साझेदारी पूछताछ',
     supportWhatLabel: 'क्या भेजें',
@@ -326,7 +327,8 @@ export const extendedTranslations = {
     supportResponseNote: 'स्वयंसेवी टीम — आपके धैर्य के लिए धन्यवाद',
     supportSendBtn: 'सुझाव भेजें',
     supportGithubBtn: 'ओपन सोर्स योगदान',
-    supportFooter: 'दुनिया भर के वैश्विक नामदेव समुदाय के लिए प्रेम से निर्मित।',
+    supportFooter:
+      '© 2026 Global Namdev Community. All rights reserved by AnjaneyaX Consulting Services.',
 
     loginTitle: 'सदस्य लॉगिन',
     loginSub:
@@ -554,8 +556,8 @@ export const extendedTranslations = {
     supportIntro:
       'प्लॅटफॉर्म सुधारण्यासाठी तुमचे सूचना, बग अहवाल आणि कल्पनांचे स्वागत आहे. आमची स्वयंसेवी विकास टीम प्रत्येक संदेश वाचते आणि तुमच्या अभिप्रायावरून अपडेटला प्राधान्य देते.',
     supportDevLabel: 'डेव्हलपर',
-    supportTeamName: 'GNC प्लॅटफॉर्म टीम',
-    supportTeamDesc: 'डिजिटल निर्देशिका तयार करणारे समुदाय स्वयंसेवक',
+    supportTeamName: 'AnjaneyaX Consulting Services',
+    supportTeamDesc: 'जागतिक नामदेव समुदाय प्लॅटफॉर्मसाठी तंत्रज्ञान भागीदार',
     supportEmailLabel: 'ईमेल',
     supportEmailDesc: 'सूचना, अभिप्राय आणि भागीदारी चौकशी',
     supportWhatLabel: 'काय पाठवावे',
@@ -568,7 +570,8 @@ export const extendedTranslations = {
     supportResponseNote: 'स्वयंसेवी टीम — तुमच्या संयमाबद्दल धन्यवाद',
     supportSendBtn: 'सूचना पाठवा',
     supportGithubBtn: 'ओपन सोर्स योगदान',
-    supportFooter: 'जगभरातील जागतिक नामदेव समुदायासाठी काळजीपूर्वक तयार.',
+    supportFooter:
+      '© 2026 Global Namdev Community. All rights reserved by AnjaneyaX Consulting Services.',
 
     loginTitle: 'सदस्य लॉगिन',
     loginSub:

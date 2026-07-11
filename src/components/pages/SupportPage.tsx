@@ -1,5 +1,10 @@
-import { Mail, MessageSquare, User, Github, Clock, Heart } from 'lucide-react';
+import { Mail, MessageSquare, User, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import {
+  SUPPORT_EMAIL,
+  SUPPORT_MAILTO_FEEDBACK,
+  SUPPORT_MAILTO_SUGGESTION,
+} from '../../lib/contact';
 import PageLayout from '../PageLayout';
 
 interface SupportPageProps {
@@ -27,19 +32,19 @@ export default function SupportPage({ onBack }: SupportPageProps) {
           </div>
         </div>
 
-        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3 min-w-0">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
             <Mail className="w-6 h-6 text-emerald-600" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] font-geist font-bold uppercase tracking-wider text-slate-400">
               {t('supportEmailLabel')}
             </p>
             <a
-              href="mailto:support@globalnamdevcommunity.org?subject=GNC%20Suggestion%20or%20Feedback"
-              className="font-sans text-sm font-bold text-primary hover:underline"
+              href={SUPPORT_MAILTO_FEEDBACK}
+              className="font-sans text-[11px] sm:text-xs font-bold text-primary hover:underline break-all leading-snug block mt-0.5"
             >
-              support@globalnamdevcommunity.org
+              {SUPPORT_EMAIL}
             </a>
             <p className="text-xs text-slate-500 mt-1">{t('supportEmailDesc')}</p>
           </div>
@@ -76,28 +81,14 @@ export default function SupportPage({ onBack }: SupportPageProps) {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+      <div className="pt-2">
         <a
-          href="mailto:support@globalnamdevcommunity.org?subject=GNC%20Suggestion"
+          href={SUPPORT_MAILTO_SUGGESTION}
           className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white text-xs font-bold rounded-xl shadow-md hover:bg-orange-600 transition-colors"
         >
           <Mail className="w-4 h-4" />
           {t('supportSendBtn')}
         </a>
-        <a
-          href="https://github.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-50 transition-colors"
-        >
-          <Github className="w-4 h-4" />
-          {t('supportGithubBtn')}
-        </a>
-      </div>
-
-      <div className="flex items-center gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
-        <Heart className="w-4 h-4 text-primary" />
-        {t('supportFooter')}
       </div>
     </PageLayout>
   );
