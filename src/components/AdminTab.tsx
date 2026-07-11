@@ -33,6 +33,13 @@ import {
   addAdminAccount,
   removeAdminAccount,
 } from '../lib/adminAuth';
+import {
+  BULLETIN_CATEGORIES,
+  DEFAULT_BULLETIN_CATEGORY,
+  getBulletinCategoryLabel,
+  normalizeBulletinCategory,
+  type BulletinCategoryId,
+} from '../lib/bulletinCategories';
 
 interface AdminTabProps {
   registrations: Registration[];
@@ -48,7 +55,7 @@ interface AdminTabProps {
   setAdminSubTab: (tab: AdminSubTab) => void;
 }
 
-type BulletinCategory = CommunityUpdate['category'];
+type BulletinCategory = BulletinCategoryId;
 
 const MAX_BULLETIN_IMAGE_BYTES = 2 * 1024 * 1024;
 
@@ -170,7 +177,7 @@ export default function AdminTab({
   const [dbSearch, setDbSearch] = useState('');
   const [bulletinTitle, setBulletinTitle] = useState('');
   const [bulletinMessage, setBulletinMessage] = useState('');
-  const [bulletinCategory, setBulletinCategory] = useState<BulletinCategory>('announcement');
+  const [bulletinCategory, setBulletinCategory] = useState<BulletinCategory>(DEFAULT_BULLETIN_CATEGORY);
   const [bulletinImageUrl, setBulletinImageUrl] = useState<string | undefined>();
   const [editingBulletinId, setEditingBulletinId] = useState<string | null>(null);
   const [imageError, setImageError] = useState('');
@@ -260,7 +267,7 @@ export default function AdminTab({
   const resetBulletinForm = () => {
     setBulletinTitle('');
     setBulletinMessage('');
-    setBulletinCategory('announcement');
+    setBulletinCategory(DEFAULT_BULLETIN_CATEGORY);
     setBulletinImageUrl(undefined);
     setEditingBulletinId(null);
     setImageError('');
@@ -455,7 +462,7 @@ export default function AdminTab({
     setEditingBulletinId(update.id);
     setBulletinTitle(update.title);
     setBulletinMessage(update.message);
-    setBulletinCategory(update.category);
+    setBulletinCategory(normalizeBulletinCategory(update.category));
     setBulletinImageUrl(update.imageUrl);
     setImageError('');
     setFormSuccess(false);
@@ -884,12 +891,11 @@ export default function AdminTab({
                     onChange={(e) => setBulletinCategory(e.target.value as BulletinCategory)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none"
                   >
-                    <option value="announcement">Announcement</option>
-                    <option value="scholarship">Scholarship Program</option>
-                    <option value="meeting">Webinar or Meeting</option>
-                    <option value="blood-camp">Blood Donation Drive</option>
-                    <option value="festival">Festival Wish</option>
-                    <option value="event">Community Event</option>
+                    {BULLETIN_CATEGORIES.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.labels.en}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1010,7 +1016,9 @@ export default function AdminTab({
                   <div className="flex justify-between items-start gap-2">
                     <div className="min-w-0 flex-1">
                       <h4 className="font-sans text-xs font-bold text-slate-800 leading-tight">{up.title}</h4>
-                      <p className="text-[10px] text-slate-400 mt-1">{up.time} · {up.category.replace('-', ' ')}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {up.time} · {getBulletinCategoryLabel(up.category, 'en')}
+                      </p>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
                       <button

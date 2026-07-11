@@ -4,6 +4,7 @@ import {
   ForumDiscussion,
   Registration,
 } from '../../types';
+import { normalizeBulletinCategory } from '../bulletinCategories';
 
 export interface MemberRow {
   id: string;
@@ -116,7 +117,7 @@ export function registrationToMemberRow(registration: Registration): MemberRow {
 export function updateRowToCommunityUpdate(row: UpdateRow): CommunityUpdate {
   return {
     id: row.id,
-    category: row.category,
+    category: normalizeBulletinCategory(row.category),
     title: row.title,
     message: row.message,
     time: row.time_label,
@@ -128,7 +129,7 @@ export function updateRowToCommunityUpdate(row: UpdateRow): CommunityUpdate {
 export function communityUpdateToRow(update: CommunityUpdate): UpdateRow {
   return {
     id: update.id,
-    category: update.category,
+    category: normalizeBulletinCategory(update.category),
     title: update.title,
     message: update.message,
     time_label: update.time,

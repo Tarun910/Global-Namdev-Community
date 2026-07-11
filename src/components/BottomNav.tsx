@@ -28,24 +28,15 @@ const NavButton: FC<{
       type="button"
       onClick={onClick}
       {...tapScale}
-      className={`relative flex flex-col items-center justify-center px-3 py-1.5 rounded-full transition-colors duration-200 cursor-pointer ${
-        active ? 'text-primary font-bold' : 'text-slate-500 hover:bg-slate-50'
-      }`}
+      className="relative flex flex-col items-center justify-center px-2 py-1 rounded-lg transition-colors duration-200 cursor-pointer text-slate-500 hover:text-slate-700"
     >
-      {active && (
-        <motion.span
-          layoutId="bottom-nav-active"
-          className="absolute inset-0 bg-orange-50 rounded-full -z-10"
-          transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-        />
-      )}
-      <Icon className="w-5 h-5 mb-0.5" />
-      <span className="font-geist text-[10px] font-semibold">{label}</span>
+      <Icon className={`w-[18px] h-[18px] mb-0.5 ${active ? 'text-primary' : 'text-slate-500'}`} />
+      <span className="font-geist text-[9px] font-medium text-slate-500 leading-none">{label}</span>
       {badge !== undefined && badge > 0 && (
         <motion.span
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute top-1.5 right-3 bg-primary text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white"
+          className="absolute top-0.5 right-1.5 bg-primary text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white"
         >
           {badge}
         </motion.span>
@@ -83,7 +74,7 @@ export default function BottomNav({
     ];
 
     return (
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/60 shadow-[0_-4px_24px_rgba(15,23,42,0.04)] rounded-t-2xl h-20 md:hidden flex justify-around items-center px-4">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/60 h-14 md:hidden flex justify-around items-center px-2 pb-[env(safe-area-inset-bottom)]">
         {adminItems.map(({ section, label, Icon }) => (
           <NavButton
             key={section}
@@ -98,7 +89,7 @@ export default function BottomNav({
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/60 shadow-[0_-4px_24px_rgba(15,23,42,0.04)] rounded-t-2xl h-20 md:hidden flex justify-around items-center px-4">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/60 h-14 md:hidden flex justify-around items-center px-2 pb-[env(safe-area-inset-bottom)]">
       <NavButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} label={t.home} Icon={Home} />
       <NavButton active={activeTab === 'map'} onClick={() => setActiveTab('map')} label={t.memberMap} Icon={Globe} />
       <NavButton

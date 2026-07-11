@@ -25,7 +25,7 @@ export interface Registration {
 
 export interface CommunityUpdate {
   id: string;
-  category: 'event' | 'announcement' | 'scholarship' | 'blood-camp' | 'meeting' | 'festival';
+  category: string;
   title: string;
   message: string;
   time: string;

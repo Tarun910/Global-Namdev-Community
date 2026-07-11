@@ -6,6 +6,16 @@ import {
   UpdateRow,
 } from '../mappers';
 
+function sortUpdatesNewestFirst(updates: CommunityUpdate[]): CommunityUpdate[] {
+  return [...updates].sort((left, right) => {
+    const rightTime = Date.parse(right.time);
+    const leftTime = Date.parse(left.time);
+    const rightValue = Number.isNaN(rightTime) ? 0 : rightTime;
+    const leftValue = Number.isNaN(leftTime) ? 0 : leftTime;
+    return rightValue - leftValue;
+  });
+}
+
 export async function fetchUpdates(): Promise<CommunityUpdate[]> {
   const { data, error } = await getSupabaseClient()
     .from('community_updates')
@@ -13,7 +23,7 @@ export async function fetchUpdates(): Promise<CommunityUpdate[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as UpdateRow[]).map(updateRowToCommunityUpdate);
+  return sortUpdatesNewestFirst((data as UpdateRow[]).map(updateRowToCommunityUpdate));
 }
 
 export async function insertUpdate(update: CommunityUpdate): Promise<CommunityUpdate> {
@@ -64,4 +74,23 @@ export async function seedUpdates(updates: CommunityUpdate[]): Promise<void> {
   const rows = updates.map(communityUpdateToRow);
   const { error } = await getSupabaseClient().from('community_updates').insert(rows);
   if (error) throw error;
+}
+
+export async function syncSeedUpdates(
+  updates: CommunityUpdate[],
+  legacyIds: string[] = [],
+): Promise<void> {
+  const existing = await fetchUpdates();
+  const existingIds = new Set(existing.map((update) => update.id));
+
+  for (const legacyId of legacyIds) {
+    if (!existingIds.has(legacyId)) continue;
+    await deleteUpdate(legacyId);
+    existingIds.delete(legacyId);
+  }
+
+  const missing = updates.filter((update) => !existingIds.has(update.id));
+  if (missing.length > 0) {
+    await seedUpdates(missing);
+  }
 }

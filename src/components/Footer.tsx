@@ -5,6 +5,7 @@ import { Language } from '../lib/languages';
 import { getTranslations } from '../lib/translations';
 import { tabToPath, AppRoute } from '../lib/routes';
 import { SUPPORT_EMAIL, ANJANEYAX_COMPANY_NAME, ANJANEYAX_WEBSITE_URL } from '../lib/contact';
+import WhatsAppChannelLink from './WhatsAppChannelLink';
 import Logo from './Logo';
 import { fadeInUp } from '../lib/motionPresets';
 
@@ -75,6 +76,14 @@ export default function Footer({ navigate, language }: FooterProps) {
                 {t.communityGuidelines}
               </FooterLink>
             </li>
+            <li>
+              <WhatsAppChannelLink
+                variant="inline"
+                title={t.whatsappChannelTitle}
+                description={t.whatsappChannelDesc}
+                ctaLabel={t.whatsappChannelCta}
+              />
+            </li>
           </ul>
         </div>
 
@@ -96,23 +105,26 @@ export default function Footer({ navigate, language }: FooterProps) {
                 {SUPPORT_EMAIL}
               </a>
             </li>
+            
           </ul>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-200/60 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="text-slate-500 text-xs leading-relaxed">
-          <p>{t.footerCopyright}</p>
           <p>
-            {t.footerRightsReserved}{' '}
-            <a
-              href={ANJANEYAX_WEBSITE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2"
-            >
-              {ANJANEYAX_COMPANY_NAME}
-            </a>
+            {t.footerCopyright}{' '}
+            <span className="whitespace-nowrap">
+              {t.footerRightsReserved}{' '}
+              <a
+                href={ANJANEYAX_WEBSITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2"
+              >
+                {ANJANEYAX_COMPANY_NAME}
+              </a>
+            </span>
           </p>
         </div>
         <div className="inline-flex items-center gap-1 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60 w-fit">

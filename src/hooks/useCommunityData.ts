@@ -3,6 +3,7 @@ import {
   INITIAL_DISCUSSIONS,
   INITIAL_REGISTRATIONS,
   INITIAL_UPDATES,
+  LEGACY_BULLETIN_IDS,
   loadCommunityUpdates,
 } from '../data';
 import { CommunityUpdate, ForumDiscussion, Registration } from '../types';
@@ -42,7 +43,11 @@ async function seedSupabaseIfEmpty(): Promise<void> {
 
   const tasks: Promise<void>[] = [];
   if (memberCount === 0) tasks.push(membersRepo.seedMembers(INITIAL_REGISTRATIONS));
-  if (updateCount === 0) tasks.push(updatesRepo.seedUpdates(INITIAL_UPDATES));
+  if (updateCount === 0) {
+    tasks.push(updatesRepo.seedUpdates(INITIAL_UPDATES));
+  } else {
+    tasks.push(updatesRepo.syncSeedUpdates(INITIAL_UPDATES, LEGACY_BULLETIN_IDS));
+  }
   if (forumCount === 0) tasks.push(forumRepo.seedForum(INITIAL_DISCUSSIONS));
 
   if (tasks.length > 0) {

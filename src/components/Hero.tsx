@@ -46,7 +46,7 @@ export default function Hero({
   const t = getTranslations(language);
 
   return (
-    <section className="relative flex flex-col justify-center overflow-hidden pt-2 pb-6 px-4 sm:px-6 bg-transparent min-h-[calc(100dvh-3.5rem-5rem)] md:min-h-[calc(100dvh-3.5rem-2rem)]">
+    <section className="relative flex flex-col justify-center overflow-hidden pt-2 pb-6 px-4 sm:px-6 bg-transparent min-h-[calc(100dvh-3.5rem-3.5rem)] md:min-h-[calc(100dvh-3.5rem-2rem)]">
       {/* Decorative background blur shapes */}
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/10 blur-[80px] rounded-full pointer-events-none animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary-container/10 blur-[100px] rounded-full pointer-events-none" />

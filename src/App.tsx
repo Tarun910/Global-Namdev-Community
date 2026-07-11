@@ -158,7 +158,7 @@ export default function App() {
   const isAuthRoute = transitionKey === 'auth';
 
   return (
-    <div className="bg-slate-50/50 text-slate-800 font-sans min-h-screen min-w-0 w-full overflow-x-hidden pb-24 md:pb-8 flex flex-col justify-between">
+    <div className="bg-slate-50/50 text-slate-800 font-sans min-h-screen min-w-0 w-full overflow-x-hidden pb-16 md:pb-8 flex flex-col justify-between">
       
       {/* Top Header Navbar */}
       <Header 

@@ -1,13 +1,20 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CommunityUpdate } from '../types';
 import {
-  Search, Bell, Calendar, Award, Gift, Heart, Users, Megaphone, CheckCircle2, ArrowRight,
-  ChevronLeft, ChevronRight,
+  Search, Bell, Calendar, CheckCircle2, ArrowRight,
+  ChevronLeft, ChevronRight, SlidersHorizontal,
 } from 'lucide-react';
 import { Language } from '../lib/languages';
 import { getTranslations } from '../lib/translations';
 import { bulletinNeedsReadMore, bulletinPreviewText } from '../lib/bulletinPreview';
+import {
+  BULLETIN_CATEGORIES,
+  getBulletinCategoryLabel,
+  normalizeBulletinCategory,
+} from '../lib/bulletinCategories';
+import { BulletinCategoryIcon } from './BulletinCategoryBadge';
+import WhatsAppChannelLink from './WhatsAppChannelLink';
 
 const BULLETINS_PER_PAGE = 5;
 
@@ -21,44 +28,50 @@ export default function UpdatesTab({ updates, language, onOpenBulletin }: Update
   const t = getTranslations(language);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [pendingFilter, setPendingFilter] = useState<string>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
 
-  const filters = [
-    { label: t.updatesFilterAll, value: 'all' },
-    { label: t.updatesFilterAnnounce, value: 'announcement' },
-    { label: t.updatesFilterScholar, value: 'scholarship' },
-    { label: t.updatesFilterEvents, value: 'meeting' },
-    { label: t.updatesFilterBlood, value: 'blood-camp' },
-    { label: t.updatesFilterFestival, value: 'festival' },
-  ];
+  const filters = useMemo(
+    () => [
+      { label: t.updatesFilterAll, value: 'all' },
+      ...BULLETIN_CATEGORIES.map((category) => ({
+        label: getBulletinCategoryLabel(category.id, language),
+        value: category.id,
+      })),
+    ],
+    [language, t.updatesFilterAll],
+  );
 
-  const renderCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'announcement':
-        return <Megaphone className="w-4 h-4 text-primary" />;
-      case 'scholarship':
-        return <Award className="w-4 h-4 text-indigo-600" />;
-      case 'meeting':
-      case 'event':
-        return <Users className="w-4 h-4 text-emerald-600" />;
-      case 'blood-camp':
-        return <Heart className="w-4 h-4 text-red-500" />;
-      case 'festival':
-        return <Gift className="w-4 h-4 text-amber-500" />;
-      default:
-        return <Bell className="w-4 h-4 text-slate-500" />;
+  useEffect(() => {
+    if (filterOpen) {
+      setPendingFilter(selectedFilter);
     }
+  }, [filterOpen, selectedFilter]);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterPanelRef.current && !filterPanelRef.current.contains(event.target as Node)) {
+        setFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [filterOpen]);
+
+  const applyFilters = () => {
+    setSelectedFilter(pendingFilter);
+    setFilterOpen(false);
   };
 
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case 'announcement': return t.updatesCatAnnouncement;
-      case 'scholarship': return t.updatesCatScholarship;
-      case 'meeting': return t.updatesCatMeeting;
-      case 'blood-camp': return t.updatesCatBlood;
-      case 'festival': return t.updatesCatFestival;
-      default: return t.updatesCatGeneral;
-    }
+  const clearFilters = () => {
+    setPendingFilter('all');
+    setSelectedFilter('all');
+    setFilterOpen(false);
   };
 
   const filteredUpdates = useMemo(() => {
@@ -67,10 +80,9 @@ export default function UpdatesTab({ updates, language, onOpenBulletin }: Update
         update.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         update.message.toLowerCase().includes(searchTerm.toLowerCase());
 
+      const normalizedCategory = normalizeBulletinCategory(update.category);
       const matchesFilter =
-        selectedFilter === 'all' ||
-        update.category === selectedFilter ||
-        (selectedFilter === 'meeting' && update.category === 'event');
+        selectedFilter === 'all' || normalizedCategory === selectedFilter;
 
       return matchesSearch && matchesFilter;
     });
@@ -110,34 +122,96 @@ export default function UpdatesTab({ updates, language, onOpenBulletin }: Update
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const hasActiveFilter = selectedFilter !== 'all';
+
   return (
     <div className="space-y-8 py-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-6">
-        <div className="relative w-full md:max-w-xs">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <WhatsAppChannelLink
+        title={t.whatsappChannelTitle}
+        description={t.whatsappChannelDesc}
+        ctaLabel={t.whatsappChannelCta}
+      />
+
+      <div className="border-b border-slate-100 pb-6">
+        <div className="relative w-full md:max-w-xs" ref={filterPanelRef}>
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t.updatesSearchPh}
-            className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400 shadow-sm transition-all"
+            className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400 shadow-sm transition-all"
           />
-        </div>
+          <button
+            type="button"
+            onClick={() => setFilterOpen((open) => !open)}
+            className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors cursor-pointer ${
+              filterOpen || hasActiveFilter
+                ? 'text-primary bg-orange-50'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+            }`}
+            aria-label={t.updatesFilterTitle}
+            aria-expanded={filterOpen}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            {hasActiveFilter && (
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+            )}
+          </button>
 
-        <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
-          {filters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setSelectedFilter(filter.value)}
-              className={`px-3.5 py-1.5 rounded-full font-geist text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                selectedFilter === filter.value
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
+          <AnimatePresence>
+            {filterOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-1.5 w-full sm:w-72 bg-white border border-slate-200 rounded-lg shadow-lg p-2 z-40"
+              >
+                <p className="text-[9px] font-geist font-bold uppercase tracking-wider text-slate-400 mb-1 px-1">
+                  {t.updatesFilterTitle}
+                </p>
+                <div className="space-y-0.5 max-h-48 overflow-y-auto pr-0.5">
+                  {filters.map((filter) => (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setPendingFilter(filter.value)}
+                      className={`w-full text-left px-2 py-1.5 rounded-md text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-2 ${
+                        pendingFilter === filter.value
+                          ? 'bg-primary text-white'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {filter.value !== 'all' && (
+                        <BulletinCategoryIcon
+                          category={filter.value}
+                          iconSize="w-3.5 h-3.5"
+                        />
+                      )}
+                      <span className="leading-tight">{filter.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-1.5 mt-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="flex-1 py-1.5 rounded-md border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  >
+                    {t.updatesFilterClear}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyFilters}
+                    className="flex-1 py-1.5 rounded-md bg-primary text-white text-[11px] font-bold hover:opacity-90 cursor-pointer"
+                  >
+                    {t.updatesFilterApply}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -234,12 +308,12 @@ export default function UpdatesTab({ updates, language, onOpenBulletin }: Update
                 >
                   <div className="flex items-start gap-3 shrink-0">
                     <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
-                      {renderCategoryIcon(update.category)}
+                      <BulletinCategoryIcon category={update.category} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="px-2 py-0.5 bg-slate-50 border border-slate-200/50 text-slate-500 text-[9px] font-bold rounded uppercase tracking-wider">
-                          {getCategoryLabel(update.category)}
+                        <span className="px-2 py-0.5 bg-slate-50 border border-slate-200/50 text-slate-500 text-[9px] font-bold rounded tracking-wide max-w-[70%] truncate">
+                          {getBulletinCategoryLabel(update.category, language)}
                         </span>
                         <span className="text-slate-400 font-geist text-[10px] shrink-0">
                           {update.time}

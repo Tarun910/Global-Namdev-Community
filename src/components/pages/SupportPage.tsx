@@ -5,6 +5,7 @@ import {
   SUPPORT_MAILTO_FEEDBACK,
   SUPPORT_MAILTO_SUGGESTION,
 } from '../../lib/contact';
+import WhatsAppChannelLink from '../WhatsAppChannelLink';
 import PageLayout from '../PageLayout';
 
 interface SupportPageProps {
@@ -17,6 +18,12 @@ export default function SupportPage({ onBack }: SupportPageProps) {
   return (
     <PageLayout title={t('supportTitle')} subtitle={t('supportSubtitle')} onBack={onBack}>
       <p>{t('supportIntro')}</p>
+
+      <WhatsAppChannelLink
+        title={t('whatsappChannelTitle')}
+        description={t('whatsappChannelDesc')}
+        ctaLabel={t('whatsappChannelCta')}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
         <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-3">
