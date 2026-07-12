@@ -1,6 +1,9 @@
 import { Registration } from '../../../types';
 import { getSupabaseClient } from '../client';
+import { withTimeout } from '../../withTimeout';
 import { memberRowToRegistration, registrationToMemberRow, MemberRow } from '../mappers';
+
+const SUPABASE_TIMEOUT_MS = 12_000;
 
 export async function fetchMembers(): Promise<Registration[]> {
   const { data, error } = await getSupabaseClient()
@@ -89,16 +92,23 @@ export async function verifyMemberPasswordDirect(
   memberId: string,
   password: string,
 ): Promise<boolean> {
-  const { data, error } = await getSupabaseClient()
-    .from('members')
-    .select('password_hash')
-    .eq('id', memberId)
-    .maybeSingle();
+  try {
+    const { data, error } = await withTimeout(
+      getSupabaseClient()
+        .from('members')
+        .select('password_hash')
+        .eq('id', memberId)
+        .maybeSingle(),
+      SUPABASE_TIMEOUT_MS,
+    );
 
-  if (error || !data?.password_hash) return false;
+    if (error || !data?.password_hash) return false;
 
-  const bcrypt = await import('bcryptjs');
-  return bcrypt.compareSync(password.trim(), data.password_hash as string);
+    const bcrypt = await import('bcryptjs');
+    return bcrypt.compareSync(password.trim(), data.password_hash as string);
+  } catch {
+    return false;
+  }
 }
 
 export async function verifyMemberLogin(
@@ -106,15 +116,22 @@ export async function verifyMemberLogin(
   password: string,
   dialCode: string,
 ): Promise<MemberLoginRow | null> {
-  const { data, error } = await getSupabaseClient().rpc('verify_member_login', {
-    p_identifier: identifier,
-    p_password: password,
-    p_dial_code: dialCode,
-  });
+  try {
+    const { data, error } = await withTimeout(
+      getSupabaseClient().rpc('verify_member_login', {
+        p_identifier: identifier,
+        p_password: password,
+        p_dial_code: dialCode,
+      }),
+      SUPABASE_TIMEOUT_MS,
+    );
 
-  if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
-  return row ? (row as MemberLoginRow) : null;
+    if (error) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as MemberLoginRow) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function setMemberPasswordOnRegister(
@@ -156,13 +173,19 @@ export async function resetMemberPassword(params: {
 }
 
 export async function memberHasPassword(memberId: string): Promise<boolean> {
-  const { data, error } = await getSupabaseClient()
-    .from('members')
-    .select('id')
-    .eq('id', memberId)
-    .not('password_hash', 'is', null)
-    .maybeSingle();
+  try {
+    const { data, error } = await withTimeout(
+      getSupabaseClient()
+        .from('members')
+        .select('password_hash')
+        .eq('id', memberId)
+        .maybeSingle(),
+      SUPABASE_TIMEOUT_MS,
+    );
 
-  if (error) throw error;
-  return Boolean(data);
+    if (error) return false;
+    return Boolean(data?.password_hash);
+  } catch {
+    return false;
+  }
 }

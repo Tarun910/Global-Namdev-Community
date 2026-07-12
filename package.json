@@ -12,6 +12,8 @@
     "lint": "tsc --noEmit",
     "supabase:setup": "node scripts/setup-supabase.mjs",
     "supabase:configure": "node scripts/configure-supabase-env.mjs",
+    "supabase:apply-member-auth": "node scripts/apply-member-auth-migration.mjs",
+    "supabase:check-member-auth": "node scripts/check-member-auth.mjs",
     "deploy": "vercel --prod",
     "deploy:preview": "vercel"
   },

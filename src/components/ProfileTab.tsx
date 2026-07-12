@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Save, LogOut, Download, Pencil, X, FileText } from 'lucide-react';
 import { Registration } from '../types';
-import { clearSession } from '../lib/demoAuth';
 import { getTranslations } from '../lib/translations';
 import { Language } from '../lib/languages';
 import { formatDisplayMobile, getDialCodeForCountry } from '../lib/countries';
@@ -9,6 +8,7 @@ import { validateRegistrationFields } from '../lib/validateRegistration';
 import { downloadIdCardPdf, downloadIdCardPng } from '../lib/idCardDownload';
 import RegistrationDetailsForm, { RegistrationFormValues } from './RegistrationDetailsForm';
 import IdCardPreview from './IdCardPreview';
+import ConfirmDialog from './ConfirmDialog';
 
 interface ProfileTabProps {
   member: Registration;
@@ -25,6 +25,7 @@ export default function ProfileTab({ member, onUpdate, onLogout, language }: Pro
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     setForm({ ...member });
@@ -82,7 +83,11 @@ export default function ProfileTab({ member, onUpdate, onLogout, language }: Pro
   };
 
   const handleLogout = () => {
-    clearSession();
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false);
     onLogout();
   };
 
@@ -218,6 +223,17 @@ export default function ProfileTab({ member, onUpdate, onLogout, language }: Pro
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        title={t.logoutConfirmTitle}
+        message={t.logoutConfirmMessage}
+        onClose={() => setShowLogoutConfirm(false)}
+        actions={[
+          { label: t.profileCancel, variant: 'ghost', onClick: () => setShowLogoutConfirm(false) },
+          { label: t.logoutConfirmBtn, variant: 'danger', onClick: confirmLogout },
+        ]}
+      />
     </div>
   );
 }

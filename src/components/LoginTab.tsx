@@ -17,6 +17,7 @@ import {
   isCommunityIdIdentifier,
   memberHasPassword,
 } from '../lib/memberAuth';
+import { memberHasLocalPassword } from '../lib/memberPasswordStore';
 import { isSupabaseConfigured } from '../lib/supabase/client';
 import { validateMemberLoginPasswordField } from '../lib/validateForms';
 import { useOtpMode } from '../hooks/useOtpMode';
@@ -198,12 +199,6 @@ export default function LoginTab({
       return;
     }
 
-    const hasPassword = await memberHasPassword(member, usingSupabase);
-    if (!hasPassword) {
-      setError(t.loginErrorNoPasswordSet);
-      return;
-    }
-
     setIsPasswordLoggingIn(true);
     try {
       const result = await authenticateMemberWithPassword(
@@ -215,13 +210,31 @@ export default function LoginTab({
       );
 
       if (!result) {
-        setError(t.loginErrorInvalidPassword);
+        const hasLocalPassword = memberHasLocalPassword(member.id);
+        let hasRemotePassword = false;
+        if (usingSupabase) {
+          try {
+            hasRemotePassword = await memberHasPassword(member, usingSupabase);
+          } catch {
+            hasRemotePassword = false;
+          }
+        }
+
+        if (!hasLocalPassword && !hasRemotePassword) {
+          setError(t.loginErrorNoPasswordSet);
+        } else {
+          setError(t.loginErrorInvalidPassword);
+        }
         return;
       }
 
       completeLogin(result.member);
     } catch (err) {
-      const message = err instanceof Error ? err.message : t.loginErrorInvalidPassword;
+      const message = err instanceof Error && err.message.includes('timed out')
+        ? t.loginErrorSupabaseUnavailable
+        : err instanceof Error
+          ? err.message
+          : t.loginErrorInvalidPassword;
       setError(message);
     } finally {
       setIsPasswordLoggingIn(false);

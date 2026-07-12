@@ -33,6 +33,7 @@ import { computeMemberDashboardStats } from './lib/memberGeoStats';
 import { AdminSubTab } from './lib/adminNav';
 import { AdminSession, getAdminSession } from './lib/adminAuth';
 import { scaleIn, tapScale } from './lib/motionPresets';
+import ToastHost, { showToast } from './components/ToastHost';
 
 function getTransitionKey(tab: string, bulletinId: string | null): string {
   if (tab === 'login' || tab === 'profile' || tab === 'forgotPassword') return 'auth';
@@ -134,12 +135,17 @@ export default function App() {
 
   const [session, setSession] = useState<AuthSession | null>(() => getSession());
 
+  const announceLogin = useCallback(() => {
+    showToast(getTranslations(language).loginSuccessToast, 'login');
+  }, [language]);
+
   const handleLoginSuccess = useCallback((authSession: AuthSession) => {
     setSession(authSession);
+    announceLogin();
     setActiveTab('profile');
     navigateToTab('profile', true);
     window.scrollTo(0, 0);
-  }, []);
+  }, [announceLogin]);
 
   const loggedInMember = session
     ? registrations.find((r) => r.id === session.registrationId) ?? null
@@ -159,6 +165,7 @@ export default function App() {
   const handleLogout = () => {
     clearSession();
     setSession(null);
+    showToast(t.logoutSuccessToast, 'logout');
     navigate('home');
   };
 
@@ -319,7 +326,10 @@ export default function App() {
                   onRegisterSubmit={handleRegisterSubmit} 
                   onNavigate={navigate}
                   onNavigateLogin={() => navigate('login')}
-                  onSessionCreated={(authSession) => setSession(authSession)}
+                  onSessionCreated={(authSession) => {
+                    setSession(authSession);
+                    announceLogin();
+                  }}
                   registrations={registrations}
                   language={language}
                 />
@@ -455,6 +465,8 @@ export default function App() {
         setAdminSubTab={setAdminSubTab}
         isSuperAdmin={Boolean(adminSession?.isSuperAdmin)}
       />
+
+      <ToastHost />
     </div>
   );
 }
