@@ -1,8 +1,9 @@
 import { motion } from 'motion/react';
-import { ArrowLeft, Calendar, CheckCircle2 } from 'lucide-react';
+import { Calendar, CheckCircle2 } from 'lucide-react';
 import { CommunityUpdate } from '../../types';
 import { Language } from '../../lib/languages';
 import { getTranslations } from '../../lib/translations';
+import BackButton from '../BackButton';
 import BulletinCategoryBadge from '../BulletinCategoryBadge';
 import BulletinArticleBody from '../BulletinArticleBody';
 
@@ -18,14 +19,7 @@ export default function BulletinDetailPage({ update, language, onBack }: Bulleti
   if (!update) {
     return (
       <div className="max-w-3xl mx-auto py-12 text-center space-y-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-primary transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t.updatesBackToBoard}
-        </button>
+        <BackButton onClick={onBack} label={t.updatesBackToBoard} />
         <div className="py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200 px-6">
           <h2 className="font-sans text-lg font-bold text-slate-900">{t.updatesNotFound}</h2>
           <p className="text-xs text-slate-500 mt-2">{t.updatesNotFoundSub}</p>
@@ -41,14 +35,7 @@ export default function BulletinDetailPage({ update, language, onBack }: Bulleti
       transition={{ duration: 0.25 }}
       className="max-w-3xl mx-auto py-6 space-y-5"
     >
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-primary transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        {t.updatesBackToBoard}
-      </button>
+      <BackButton onClick={onBack} label={t.updatesBackToBoard} />
 
       <article className="bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden">
         {update.imageUrl && (

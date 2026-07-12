@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   INITIAL_DISCUSSIONS,
   INITIAL_REGISTRATIONS,
-  INITIAL_UPDATES,
-  LEGACY_BULLETIN_IDS,
   loadCommunityUpdates,
 } from '../data';
 import { CommunityUpdate, ForumDiscussion, Registration } from '../types';
@@ -16,6 +14,7 @@ import {
 import * as membersRepo from '../lib/supabase/repositories/members';
 import * as updatesRepo from '../lib/supabase/repositories/updates';
 import * as forumRepo from '../lib/supabase/repositories/forum';
+import { setLocalMemberPassword } from '../lib/memberPasswordStore';
 
 function isMemberRegistrationBulletin(update: CommunityUpdate): boolean {
   return update.id.startsWith('reg-notif-') || update.title === 'New Member Registered!';
@@ -35,19 +34,13 @@ function loadLocalRegistrations(): Registration[] {
 }
 
 async function seedSupabaseIfEmpty(): Promise<void> {
-  const [memberCount, updateCount, forumCount] = await Promise.all([
+  const [memberCount, forumCount] = await Promise.all([
     membersRepo.countMembers(),
-    updatesRepo.countUpdates(),
     forumRepo.countDiscussions(),
   ]);
 
   const tasks: Promise<void>[] = [];
   if (memberCount === 0) tasks.push(membersRepo.seedMembers(INITIAL_REGISTRATIONS));
-  if (updateCount === 0) {
-    tasks.push(updatesRepo.seedUpdates(INITIAL_UPDATES));
-  } else {
-    tasks.push(updatesRepo.syncSeedUpdates(INITIAL_UPDATES, LEGACY_BULLETIN_IDS));
-  }
   if (forumCount === 0) tasks.push(forumRepo.seedForum(INITIAL_DISCUSSIONS));
 
   if (tasks.length > 0) {
@@ -67,7 +60,7 @@ export interface UseCommunityDataResult {
   handleUpdateUpdate: (updated: CommunityUpdate) => Promise<void>;
   handleMarkRead: (id: string) => void;
   handleMarkAllUpdatesRead: () => void;
-  handleRegisterSubmit: (newReg: Registration) => Promise<void>;
+  handleRegisterSubmit: (newReg: Registration, password?: string) => Promise<void>;
   handleDeleteRegistration: (id: string) => Promise<void>;
   handleUpdateRegistration: (updated: Registration) => Promise<void>;
   handleAddDiscussion: (title: string, content: string, category: string) => Promise<void>;
@@ -100,15 +93,19 @@ export function useCommunityData(): UseCommunityDataResult {
     try {
       await seedSupabaseIfEmpty();
 
-      const [members, communityUpdates, forumDiscussions] = await Promise.all([
+      const [members, communityUpdates] = await Promise.all([
         membersRepo.fetchMembers(),
         updatesRepo.fetchUpdates(),
-        forumRepo.fetchDiscussions(),
       ]);
 
       setRegistrations(members);
       setUpdates(applyBulletinReadState(filterBulletinFeed(communityUpdates)));
-      setDiscussions(forumDiscussions);
+
+      void forumRepo.fetchDiscussions().then((forumDiscussions) => {
+        setDiscussions(forumDiscussions);
+      }).catch(() => {
+        /* forum loads in background; admin/forum tab may retry via refresh */
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load community data.';
       setError(message);
@@ -191,11 +188,22 @@ export function useCommunityData(): UseCommunityDataResult {
   }, []);
 
   const handleRegisterSubmit = useCallback(
-    async (newReg: Registration) => {
+    async (newReg: Registration, password?: string) => {
       if (usingSupabase) {
         const saved = await membersRepo.insertMember(newReg);
+        if (password) {
+          await membersRepo.setMemberPasswordOnRegister(
+            saved.id,
+            saved.mobileCountryCode ?? '+91',
+            saved.mobileNumber,
+            password,
+          );
+        }
         setRegistrations((prev) => [saved, ...prev]);
       } else {
+        if (password) {
+          await setLocalMemberPassword(newReg.id, password);
+        }
         setRegistrations((prev) => [newReg, ...prev]);
       }
     },

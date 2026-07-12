@@ -50,9 +50,9 @@ export function validateRegistrationFields(
   }
 
   if (!values.dobOrAge?.trim()) {
-    errors.dobOrAge = 'DOB or Age is required';
+    errors.dobOrAge = 'Date of birth is required';
   } else if (!isValidDobOrAge(values.dobOrAge)) {
-    errors.dobOrAge = 'Enter a valid date (DD/MM/YYYY) or age (1–120)';
+    errors.dobOrAge = 'Pick a valid date of birth';
   }
 
   if (!values.mobileNumber?.trim()) {

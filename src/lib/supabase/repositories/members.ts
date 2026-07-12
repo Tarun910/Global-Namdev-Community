@@ -60,3 +60,75 @@ export async function seedMembers(registrations: Registration[]): Promise<void> 
   const { error } = await getSupabaseClient().from('members').insert(rows);
   if (error) throw error;
 }
+
+export interface MemberLoginRow {
+  member_id: string;
+  community_id: string;
+  full_name: string;
+}
+
+export async function verifyMemberLogin(
+  identifier: string,
+  password: string,
+  dialCode: string,
+): Promise<MemberLoginRow | null> {
+  const { data, error } = await getSupabaseClient().rpc('verify_member_login', {
+    p_identifier: identifier,
+    p_password: password,
+    p_dial_code: dialCode,
+  });
+
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? (row as MemberLoginRow) : null;
+}
+
+export async function setMemberPasswordOnRegister(
+  memberId: string,
+  dialCode: string,
+  mobile: string,
+  password: string,
+): Promise<boolean> {
+  const { data, error } = await getSupabaseClient().rpc('set_member_password_on_register', {
+    p_member_id: memberId,
+    p_dial_code: dialCode,
+    p_mobile: mobile,
+    p_password: password,
+  });
+
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function resetMemberPassword(params: {
+  dialCode: string;
+  mobile: string;
+  dobOrAge: string;
+  fathersName: string;
+  communityId: string;
+  newPassword: string;
+}): Promise<boolean> {
+  const { data, error } = await getSupabaseClient().rpc('reset_member_password', {
+    p_dial_code: params.dialCode,
+    p_mobile: params.mobile,
+    p_dob_or_age: params.dobOrAge,
+    p_fathers_name: params.fathersName,
+    p_community_id: params.communityId,
+    p_new_password: params.newPassword,
+  });
+
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function memberHasPassword(memberId: string): Promise<boolean> {
+  const { data, error } = await getSupabaseClient()
+    .from('members')
+    .select('id')
+    .eq('id', memberId)
+    .not('password_hash', 'is', null)
+    .maybeSingle();
+
+  if (error) throw error;
+  return Boolean(data);
+}

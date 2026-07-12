@@ -165,6 +165,7 @@ export default function ProfileTab({ member, onUpdate, onLogout, language }: Pro
                 )}
                 communityId={form.communityId}
                 onCountryChange={handleCountryChange}
+                showOtpVerifiedBadge={member.isVerified}
               />
 
               <div className="flex flex-col sm:flex-row gap-3">

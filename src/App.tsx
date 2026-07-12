@@ -1,26 +1,27 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import Hero from './components/Hero';
-import Stats from './components/Stats';
-import Forum from './components/Forum';
 import UpdatesTab from './components/UpdatesTab';
-import BulletinDetailPage from './components/pages/BulletinDetailPage';
-import RegisterTab from './components/RegisterTab';
-import MapTab from './components/MapTab';
-import DownloadTab from './components/DownloadTab';
-import AdminTab from './components/AdminTab';
-import LoginTab from './components/LoginTab';
-import ProfileTab from './components/ProfileTab';
 import Footer from './components/Footer';
 
-import TermsPage from './components/pages/TermsPage';
-import PrivacyPage from './components/pages/PrivacyPage';
-import CookiePage from './components/pages/CookiePage';
-import GuidelinesPage from './components/pages/GuidelinesPage';
-import SupportPage from './components/pages/SupportPage';
+const Stats = lazy(() => import('./components/Stats'));
+const Forum = lazy(() => import('./components/Forum'));
+const MapTab = lazy(() => import('./components/MapTab'));
+const RegisterTab = lazy(() => import('./components/RegisterTab'));
+const LoginTab = lazy(() => import('./components/LoginTab'));
+const ForgotPasswordTab = lazy(() => import('./components/ForgotPasswordTab'));
+const ProfileTab = lazy(() => import('./components/ProfileTab'));
+const DownloadTab = lazy(() => import('./components/DownloadTab'));
+const AdminTab = lazy(() => import('./components/AdminTab'));
+const BulletinDetailPage = lazy(() => import('./components/pages/BulletinDetailPage'));
+const TermsPage = lazy(() => import('./components/pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./components/pages/PrivacyPage'));
+const CookiePage = lazy(() => import('./components/pages/CookiePage'));
+const GuidelinesPage = lazy(() => import('./components/pages/GuidelinesPage'));
+const SupportPage = lazy(() => import('./components/pages/SupportPage'));
 
 import { Language } from './lib/languages';
 import { useCommunityData } from './hooks/useCommunityData';
@@ -34,7 +35,7 @@ import { AdminSession, getAdminSession } from './lib/adminAuth';
 import { scaleIn, tapScale } from './lib/motionPresets';
 
 function getTransitionKey(tab: string, bulletinId: string | null): string {
-  if (tab === 'login' || tab === 'profile') return 'auth';
+  if (tab === 'login' || tab === 'profile' || tab === 'forgotPassword') return 'auth';
   if (tab === 'updates' && bulletinId) return `updates-${bulletinId}`;
   return tab;
 }
@@ -51,10 +52,20 @@ export default function App() {
     void changeAppLanguage(language);
   }, [language]);
 
+  const [registerMode, setRegisterMode] = useState<'self' | 'family'>('self');
+
   const navigate = useCallback((tab: string) => {
     setActiveTab(tab);
     setBulletinId(null);
     navigateToTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const openRegister = useCallback((mode: 'self' | 'family') => {
+    setRegisterMode(mode);
+    setActiveTab('register');
+    setBulletinId(null);
+    navigateToTab('register');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
@@ -163,7 +174,8 @@ export default function App() {
       {/* Top Header Navbar */}
       <Header 
         activeTab={activeTab} 
-        setActiveTab={navigate} 
+        setActiveTab={navigate}
+        onRegisterClick={() => openRegister('self')}
         unreadCount={unreadCount} 
         language={language}
         setLanguage={setLanguage}
@@ -209,8 +221,8 @@ export default function App() {
             {activeTab === 'home' && (
               <div className="space-y-16">
                 <Hero 
-                  onRegisterSelf={() => navigate('register')}
-                  onRegisterFamily={() => navigate('register')}
+                  onRegisterSelf={() => openRegister('self')}
+                  onRegisterFamily={() => openRegister('family')}
                   onLogin={() => navigate('login')}
                   onExploreStatsClick={() => {
                     const statsSec = document.getElementById('stats-grid');
@@ -221,7 +233,9 @@ export default function App() {
                 />
 
                 <div id="stats-grid">
-                  <Stats registrations={registrations} language={language} />
+                  <Suspense fallback={null}>
+                    <Stats registrations={registrations} language={language} />
+                  </Suspense>
                 </div>
 
                 {/* Saffron Stripe invitation panel */}
@@ -246,7 +260,7 @@ export default function App() {
                     <div className="pt-2">
                       <motion.button
                         {...tapScale}
-                        onClick={() => navigate('register')}
+                        onClick={() => openRegister('self')}
                         className="px-6 py-3 bg-white text-primary font-geist text-xs font-bold rounded-xl shadow-md hover:bg-slate-50 transition-colors cursor-pointer"
                       >
                         {t.registerProfileButton}
@@ -259,29 +273,35 @@ export default function App() {
 
             {/* 3. INTERACTIVE MAP TAB */}
             {activeTab === 'map' && (
-              <MapTab registrations={registrations} language={language} />
+              <Suspense fallback={null}>
+                <MapTab registrations={registrations} language={language} />
+              </Suspense>
             )}
 
             {/* 4. FORUM DISCUSSIONS TAB */}
             {activeTab === 'forum' && (
-              <Forum
-                discussions={discussions}
-                onAddDiscussion={handleAddDiscussion}
-                onAddComment={handleAddComment}
-                onLikeDiscussion={handleLikeDiscussion}
-                userName="Verified Member"
-                language={language}
-              />
+              <Suspense fallback={null}>
+                <Forum
+                  discussions={discussions}
+                  onAddDiscussion={handleAddDiscussion}
+                  onAddComment={handleAddComment}
+                  onLikeDiscussion={handleLikeDiscussion}
+                  userName="Verified Member"
+                  language={language}
+                />
+              </Suspense>
             )}
 
             {/* 5. BULLETINS / UPDATES TAB */}
             {activeTab === 'updates' && (
               bulletinId ? (
-                <BulletinDetailPage
-                  update={selectedBulletin}
-                  language={language}
-                  onBack={closeBulletin}
-                />
+                <Suspense fallback={null}>
+                  <BulletinDetailPage
+                    update={selectedBulletin}
+                    language={language}
+                    onBack={closeBulletin}
+                  />
+                </Suspense>
               ) : (
                 <UpdatesTab
                   updates={updates}
@@ -293,92 +313,129 @@ export default function App() {
 
             {/* 6. REGISTER TAB */}
             {activeTab === 'register' && (
-              <RegisterTab 
-                onRegisterSubmit={handleRegisterSubmit} 
-                onNavigate={navigate}
-                onNavigateLogin={() => navigate('login')}
-                onSessionCreated={(authSession) => setSession(authSession)}
-                registrations={registrations}
-                language={language}
-              />
+              <Suspense fallback={null}>
+                <RegisterTab 
+                  registerMode={registerMode}
+                  onRegisterSubmit={handleRegisterSubmit} 
+                  onNavigate={navigate}
+                  onNavigateLogin={() => navigate('login')}
+                  onSessionCreated={(authSession) => setSession(authSession)}
+                  registrations={registrations}
+                  language={language}
+                />
+              </Suspense>
             )}
 
             {activeTab === 'login' && (
-              loggedInMember ? (
-                <ProfileTab
-                  member={loggedInMember}
-                  onUpdate={handleUpdateRegistration}
-                  onLogout={handleLogout}
-                  language={language}
-                />
-              ) : (
-                <LoginTab
-                  registrations={registrations}
-                  onLoginSuccess={handleLoginSuccess}
-                  onNavigateRegister={() => navigate('register')}
-                  language={language}
-                />
-              )
+              <Suspense fallback={null}>
+                {loggedInMember ? (
+                  <ProfileTab
+                    member={loggedInMember}
+                    onUpdate={handleUpdateRegistration}
+                    onLogout={handleLogout}
+                    language={language}
+                  />
+                ) : (
+                  <LoginTab
+                    registrations={registrations}
+                    onLoginSuccess={handleLoginSuccess}
+                    onNavigateRegister={() => openRegister('self')}
+                    onNavigateForgotPassword={() => navigate('forgotPassword')}
+                    language={language}
+                  />
+                )}
+              </Suspense>
             )}
 
             {activeTab === 'profile' && (
-              loggedInMember ? (
-                <ProfileTab
-                  member={loggedInMember}
-                  onUpdate={handleUpdateRegistration}
-                  onLogout={handleLogout}
-                  language={language}
-                />
-              ) : (
-                <LoginTab
+              <Suspense fallback={null}>
+                {loggedInMember ? (
+                  <ProfileTab
+                    member={loggedInMember}
+                    onUpdate={handleUpdateRegistration}
+                    onLogout={handleLogout}
+                    language={language}
+                  />
+                ) : (
+                  <LoginTab
+                    registrations={registrations}
+                    onLoginSuccess={handleLoginSuccess}
+                    onNavigateRegister={() => openRegister('self')}
+                    onNavigateForgotPassword={() => navigate('forgotPassword')}
+                    language={language}
+                  />
+                )}
+              </Suspense>
+            )}
+
+            {activeTab === 'forgotPassword' && (
+              <Suspense fallback={null}>
+                <ForgotPasswordTab
                   registrations={registrations}
-                  onLoginSuccess={handleLoginSuccess}
-                  onNavigateRegister={() => navigate('register')}
                   language={language}
+                  onNavigateLogin={() => navigate('login')}
                 />
-              )
+              </Suspense>
             )}
 
             {/* 7. DOWNLOAD CARD TAB */}
             {activeTab === 'download' && (
-              <DownloadTab registrations={registrations} language={language} />
+              <Suspense fallback={null}>
+                <DownloadTab
+                  registrations={registrations}
+                  language={language}
+                  loggedInMember={loggedInMember}
+                />
+              </Suspense>
             )}
 
             {/* 9. ADMIN PANEL TAB */}
             {activeTab === 'admin' && (
-              <AdminTab
-                registrations={registrations}
-                updates={updates}
-                discussions={discussions}
-                onAddUpdate={handlePublishUpdate}
-                onUpdateUpdate={handleUpdateUpdate}
-                onDeleteUpdate={handleDeleteUpdate}
-                onDeleteRegistration={handleDeleteRegistration}
-                onAddRegistration={handleRegisterSubmit}
-                onAdminSessionChange={setAdminSession}
-                adminSubTab={adminSubTab}
-                setAdminSubTab={setAdminSubTab}
-              />
+              <Suspense fallback={null}>
+                <AdminTab
+                  registrations={registrations}
+                  updates={updates}
+                  discussions={discussions}
+                  onAddUpdate={handlePublishUpdate}
+                  onUpdateUpdate={handleUpdateUpdate}
+                  onDeleteUpdate={handleDeleteUpdate}
+                  onDeleteRegistration={handleDeleteRegistration}
+                  onAddRegistration={handleRegisterSubmit}
+                  onAdminSessionChange={setAdminSession}
+                  adminSubTab={adminSubTab}
+                  setAdminSubTab={setAdminSubTab}
+                />
+              </Suspense>
             )}
 
             {activeTab === 'terms' && (
-              <TermsPage onBack={() => navigate('home')} />
+              <Suspense fallback={null}>
+                <TermsPage onBack={() => navigate('home')} />
+              </Suspense>
             )}
 
             {activeTab === 'privacy' && (
-              <PrivacyPage onBack={() => navigate('home')} />
+              <Suspense fallback={null}>
+                <PrivacyPage onBack={() => navigate('home')} />
+              </Suspense>
             )}
 
             {activeTab === 'cookies' && (
-              <CookiePage onBack={() => navigate('home')} />
+              <Suspense fallback={null}>
+                <CookiePage onBack={() => navigate('home')} />
+              </Suspense>
             )}
 
             {activeTab === 'guidelines' && (
-              <GuidelinesPage onBack={() => navigate('home')} />
+              <Suspense fallback={null}>
+                <GuidelinesPage onBack={() => navigate('home')} />
+              </Suspense>
             )}
 
             {activeTab === 'support' && (
-              <SupportPage onBack={() => navigate('home')} />
+              <Suspense fallback={null}>
+                <SupportPage onBack={() => navigate('home')} />
+              </Suspense>
             )}
           </motion.div>
         </AnimatePresence>

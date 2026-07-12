@@ -78,7 +78,7 @@ const LEDGER_COLUMNS: { key: string; label: string; render: (reg: Registration) 
   { key: 'fathersName', label: "Father's Name", render: (r) => ledgerCell(r.fathersName) },
   { key: 'mothersName', label: "Mother's Name", render: (r) => ledgerCell(r.mothersName) },
   { key: 'gender', label: 'Gender', render: (r) => ledgerCell(r.gender) },
-  { key: 'dobOrAge', label: 'DOB / Age', render: (r) => ledgerCell(r.dobOrAge) },
+  { key: 'dobOrAge', label: 'Date of Birth', render: (r) => ledgerCell(r.dobOrAge) },
   { key: 'mobile', label: 'Mobile', render: (r) => formatLedgerMobile(r) },
   { key: 'email', label: 'Email', render: (r) => ledgerCell(r.email) },
   { key: 'gotra', label: 'Gotra', render: (r) => ledgerCell(r.gotra) },
@@ -1322,6 +1322,8 @@ export default function AdminTab({
                   t={ADMIN_FORM_T}
                   mobileDisplay={`${memberDialCode} ${memberMobile || '—'}`}
                   onCountryChange={handleMemberCountryChange}
+                  showRelationshipField
+                  relationshipIncludeSelf
                 />
 
                 {addMemberSuccess && (

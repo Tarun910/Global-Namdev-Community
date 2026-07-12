@@ -1,6 +1,6 @@
-import { ArrowLeft } from 'lucide-react';
 import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import BackButton from './BackButton';
 
 interface PageLayoutProps {
   title: string;
@@ -14,13 +14,7 @@ export default function PageLayout({ title, subtitle, onBack, children }: PageLa
 
   return (
     <div className="max-w-3xl mx-auto py-8 space-y-8">
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-primary transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        {t('pageBackHome')}
-      </button>
+      <BackButton onClick={onBack} label={t('pageBackHome')} />
 
       <div className="space-y-2">
         <h1 className="font-sans text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">{title}</h1>

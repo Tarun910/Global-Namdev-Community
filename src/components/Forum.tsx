@@ -1,10 +1,11 @@
 import { useState, FormEvent } from 'react';
-import { Heart, MessageSquare, Plus, User, ArrowLeft, Send, Sparkles, AlertCircle } from 'lucide-react';
+import { Heart, MessageSquare, Plus, User, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { ForumDiscussion } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Language } from '../lib/languages';
 import { getTranslations, TranslationStrings } from '../lib/translations';
 import { validateForumCommentField, validateForumThreadFields } from '../lib/validateForms';
+import BackButton from './BackButton';
 
 interface ForumProps {
   discussions: ForumDiscussion[];
@@ -86,18 +87,22 @@ export default function Forum({
   };
 
   return (
-    <div className="space-y-8">
-      {/* Back button and page header if viewing thread */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/60 pb-4">
-        {activeDiscussionId ? (
-          <button
-            onClick={() => setActiveDiscussionId(null)}
-            className="flex items-center gap-2 text-primary font-geist text-sm font-semibold hover:opacity-80 transition-all cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t.forumBackToList}
-          </button>
-        ) : (
+    <div className="space-y-6">
+      {(activeDiscussionId || isCreatingThread) && (
+        <BackButton
+          onClick={() => {
+            if (activeDiscussionId) setActiveDiscussionId(null);
+            if (isCreatingThread) {
+              setIsCreatingThread(false);
+              setThreadErrors({});
+            }
+          }}
+          label={activeDiscussionId ? t.forumBackToList : t.forumBack}
+        />
+      )}
+
+      {!activeDiscussionId && !isCreatingThread && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/60 pb-4">
           <div className="space-y-1">
             <h3 className="font-sans text-2xl font-bold text-slate-900">
               {t.forumTitle}
@@ -106,9 +111,7 @@ export default function Forum({
               {t.forumSub}
             </p>
           </div>
-        )}
 
-        {!activeDiscussionId && !isCreatingThread && (
           <button
             onClick={() => setIsCreatingThread(true)}
             className="px-4 py-2 bg-primary text-white font-geist text-xs font-bold rounded-lg shadow-sm hover:opacity-90 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
@@ -116,8 +119,8 @@ export default function Forum({
             <Plus className="w-4 h-4" />
             {t.forumNewDiscussion}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {/* VIEW 1: Creating New Thread */}
@@ -134,13 +137,6 @@ export default function Forum({
                 <Sparkles className="text-primary w-4 h-4" />
                 {t.forumStartThread}
               </h4>
-              <button
-                type="button"
-                onClick={() => setIsCreatingThread(false)}
-                className="text-xs text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
-              >
-                {t.forumCancel}
-              </button>
             </div>
 
             <form onSubmit={handleCreateThread} className="space-y-4">
@@ -212,13 +208,6 @@ export default function Forum({
               </div>
 
               <div className="flex gap-2 justify-end pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingThread(false)}
-                  className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg font-geist text-xs font-semibold hover:bg-slate-100 transition-all cursor-pointer"
-                >
-                  {t.forumBack}
-                </button>
                 <button
                   type="submit"
                   className="px-6 py-2 bg-primary text-white rounded-lg font-geist text-xs font-bold hover:opacity-90 transition-all cursor-pointer"

@@ -7,6 +7,7 @@ import { TranslationStrings } from '../lib/translations';
 import { COUNTRY_NAMES } from '../lib/countries';
 import { getStatesForCountryAsync } from '../lib/regions';
 import MemberPhotoUpload from './MemberPhotoUpload';
+import DobOrAgeField from './DobOrAgeField';
 
 export type RegistrationFormValues = Pick<
   Registration,
@@ -39,6 +40,9 @@ interface RegistrationDetailsFormProps {
   mobileDisplay: string;
   communityId?: string;
   onCountryChange?: (country: string) => void;
+  showRelationshipField?: boolean;
+  relationshipIncludeSelf?: boolean;
+  showOtpVerifiedBadge?: boolean;
 }
 
 const inputClass = (hasError: boolean) =>
@@ -54,6 +58,9 @@ export default function RegistrationDetailsForm({
   mobileDisplay,
   communityId,
   onCountryChange,
+  showRelationshipField = false,
+  relationshipIncludeSelf = false,
+  showOtpVerifiedBadge = false,
 }: RegistrationDetailsFormProps) {
   const [stateOptions, setStateOptions] = useState<string[]>([]);
   const [statesLoading, setStatesLoading] = useState(false);
@@ -156,7 +163,7 @@ export default function RegistrationDetailsForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className={`grid grid-cols-1 ${showRelationshipField ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-5`}>
           <div className="space-y-1.5">
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formGender} *</label>
             <select
@@ -171,36 +178,46 @@ export default function RegistrationDetailsForm({
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formDobAge} *</label>
-            <input
-              type="text"
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formDobAge}</label>
+            <DobOrAgeField
               value={values.dobOrAge}
-              onChange={(e) => onChange('dobOrAge', e.target.value)}
-              placeholder={t.formPhDobAge}
-              className={inputClass(Boolean(errors.dobOrAge))}
+              onChange={(next) => onChange('dobOrAge', next)}
+              error={errors.dobOrAge}
+              inputClassName={errors.dobOrAge ? 'border-red-400 focus:ring-red-300' : 'border-slate-200 focus:ring-primary'}
             />
-            {errors.dobOrAge && <p className="text-[10px] text-red-500 font-medium">{errors.dobOrAge}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formRelationship}</label>
-            <select
-              value={values.relationship}
-              onChange={(e) => onChange('relationship', e.target.value as Registration['relationship'])}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              <option value="Self">{t.formRelSelf}</option>
-              <option value="Father">{t.formRelFather}</option>
-              <option value="Mother">{t.formRelMother}</option>
-              <option value="Brother">{t.formRelBrother}</option>
-              <option value="Sister">{t.formRelSister}</option>
-              <option value="Son">{t.formRelSon}</option>
-              <option value="Daughter">{t.formRelDaughter}</option>
-              <option value="Grandfather">{t.formRelGrandfather}</option>
-              <option value="Grandmother">{t.formRelGrandmother}</option>
-              <option value="Other">{t.formRelOther}</option>
-            </select>
-          </div>
+          {showRelationshipField && (
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{t.formRelationship}</label>
+              <select
+                value={values.relationship}
+                onChange={(e) => onChange('relationship', e.target.value as Registration['relationship'])}
+                className={`w-full bg-white border rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer ${
+                  errors.relationship ? 'border-red-400' : 'border-slate-200'
+                }`}
+              >
+                {!relationshipIncludeSelf && (
+                  <option value="">{t.formRelSelect}</option>
+                )}
+                {relationshipIncludeSelf && (
+                  <option value="Self">{t.formRelSelf}</option>
+                )}
+                <option value="Father">{t.formRelFather}</option>
+                <option value="Mother">{t.formRelMother}</option>
+                <option value="Brother">{t.formRelBrother}</option>
+                <option value="Sister">{t.formRelSister}</option>
+                <option value="Son">{t.formRelSon}</option>
+                <option value="Daughter">{t.formRelDaughter}</option>
+                <option value="Grandfather">{t.formRelGrandfather}</option>
+                <option value="Grandmother">{t.formRelGrandmother}</option>
+                <option value="Other">{t.formRelOther}</option>
+              </select>
+              {errors.relationship && (
+                <p className="text-[10px] text-red-500 font-medium">{errors.relationship}</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -215,7 +232,9 @@ export default function RegistrationDetailsForm({
                 className="w-full bg-slate-100 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-600 cursor-not-allowed"
               />
             </div>
-            <p className="text-[10px] text-emerald-600 font-medium">{t.formVerifiedOtp}</p>
+            {showOtpVerifiedBadge && (
+              <p className="text-[10px] text-emerald-600 font-medium">{t.formVerifiedOtp}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">

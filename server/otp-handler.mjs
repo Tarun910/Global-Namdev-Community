@@ -3,7 +3,7 @@
  * https://msg91.com/
  */
 
-const DEMO_OTP = '123456';
+const DEMO_OTP = '1234';
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_SENDS_PER_WINDOW = 3;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
@@ -162,8 +162,8 @@ export async function sendOtp({ dialCode, mobile }) {
 
 export async function verifyOtp({ dialCode, mobile, otp }) {
   const code = String(otp ?? '').trim();
-  if (!/^\d{4,6}$/.test(code)) {
-    return { success: false, message: 'Enter a valid 4–6 digit OTP.' };
+  if (!/^\d{4}$/.test(code)) {
+    return { success: false, message: 'Enter a valid 4-digit OTP.' };
   }
 
   const fullMobile = toFullMobile(dialCode, mobile);

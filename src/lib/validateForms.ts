@@ -3,11 +3,13 @@ import {
   isValidAdminUsername,
   isValidBulletinMessage,
   isValidBulletinTitle,
+  isValidDobOrAge,
   isValidForumComment,
   isValidForumContent,
   isValidForumTitle,
   isValidVerifyQuery,
 } from './formValidation';
+import { isValidLocalMobile } from './demoAuth';
 
 export function validateAdminLoginFields(username: string, password: string): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -100,5 +102,70 @@ export function validateVerifyQueryField(query: string): Record<string, string> 
     errors.searchQuery = 'Enter a valid Community ID (GNC-YYYY-XXXXXX) or mobile number';
   }
 
+  return errors;
+}
+
+export function validateMemberPasswordFields(
+  password: string,
+  passwordConfirm: string,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  if (!password) {
+    errors.password = 'Password is required';
+  } else if (!isValidAdminPassword(password)) {
+    errors.password = 'Password must be at least 6 characters';
+  }
+
+  if (!passwordConfirm) {
+    errors.passwordConfirm = 'Please confirm your password';
+  } else if (password !== passwordConfirm) {
+    errors.passwordConfirm = 'Passwords do not match';
+  }
+
+  return errors;
+}
+
+export function validateMemberLoginPasswordField(password: string): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  if (!password) {
+    errors.password = 'Password is required';
+  } else if (!isValidAdminPassword(password)) {
+    errors.password = 'Password must be at least 6 characters';
+  }
+
+  return errors;
+}
+
+export function validateForgotPasswordFields(
+  mobile: string,
+  dobOrAge: string,
+  fathersName: string,
+  communityId: string,
+  password: string,
+  passwordConfirm: string,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  if (!isValidLocalMobile(mobile)) {
+    errors.mobile = 'Enter a valid mobile number';
+  }
+
+  if (!dobOrAge.trim()) {
+    errors.dobOrAge = 'Date of birth is required';
+  } else if (!isValidDobOrAge(dobOrAge)) {
+    errors.dobOrAge = 'Pick a valid date of birth';
+  }
+
+  if (!fathersName.trim()) {
+    errors.fathersName = "Father's name is required";
+  }
+
+  if (!communityId.trim()) {
+    errors.communityId = 'Member ID is required';
+  }
+
+  Object.assign(errors, validateMemberPasswordFields(password, passwordConfirm));
   return errors;
 }

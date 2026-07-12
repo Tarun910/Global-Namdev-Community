@@ -5,6 +5,7 @@ export const APP_ROUTES = {
   updates: '/updates',
   register: '/register',
   login: '/login',
+  forgotPassword: '/forgot-password',
   profile: '/profile',
   download: '/download',
   verify: '/verify',

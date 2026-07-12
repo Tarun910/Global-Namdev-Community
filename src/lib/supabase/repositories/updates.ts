@@ -59,38 +59,3 @@ export async function deleteUpdate(id: string): Promise<void> {
 
   if (error) throw error;
 }
-
-export async function countUpdates(): Promise<number> {
-  const { count, error } = await getSupabaseClient()
-    .from('community_updates')
-    .select('*', { count: 'exact', head: true });
-
-  if (error) throw error;
-  return count ?? 0;
-}
-
-export async function seedUpdates(updates: CommunityUpdate[]): Promise<void> {
-  if (updates.length === 0) return;
-  const rows = updates.map(communityUpdateToRow);
-  const { error } = await getSupabaseClient().from('community_updates').insert(rows);
-  if (error) throw error;
-}
-
-export async function syncSeedUpdates(
-  updates: CommunityUpdate[],
-  legacyIds: string[] = [],
-): Promise<void> {
-  const existing = await fetchUpdates();
-  const existingIds = new Set(existing.map((update) => update.id));
-
-  for (const legacyId of legacyIds) {
-    if (!existingIds.has(legacyId)) continue;
-    await deleteUpdate(legacyId);
-    existingIds.delete(legacyId);
-  }
-
-  const missing = updates.filter((update) => !existingIds.has(update.id));
-  if (missing.length > 0) {
-    await seedUpdates(missing);
-  }
-}

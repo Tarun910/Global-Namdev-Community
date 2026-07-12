@@ -1,9 +1,4 @@
 import { Registration, CommunityUpdate, ForumDiscussion } from './types';
-import {
-  BULLETIN_BLOG_SEED,
-  BULLETIN_SEED_VERSION,
-  LEGACY_BULLETIN_IDS,
-} from './data/bulletinBlogSeed';
 
 export const INITIAL_REGISTRATIONS: Registration[] = [
   {
@@ -272,54 +267,13 @@ export const INITIAL_REGISTRATIONS: Registration[] = [
   }
 ];
 
-export const INITIAL_UPDATES: CommunityUpdate[] = BULLETIN_BLOG_SEED;
-
-export { BULLETIN_SEED_VERSION, LEGACY_BULLETIN_IDS };
-
-/** Merge Hindi blog seed bulletins into saved local data. */
+/** Load bulletins from local storage (demo mode without Supabase). */
 export function loadCommunityUpdates(): CommunityUpdate[] {
-  const seedIds = new Set(INITIAL_UPDATES.map((update) => update.id));
-  const legacyIds = new Set(LEGACY_BULLETIN_IDS);
-
-  const withReadState = (updates: CommunityUpdate[]) =>
-    updates.map((update) => ({
-      ...update,
-      isRead: update.isRead ?? seedIds.has(update.id),
-    }));
-
   try {
-    const savedVersion = localStorage.getItem('gnc_updates_seed_version');
     const saved = localStorage.getItem('gnc_updates');
-
-    if (!saved || savedVersion !== BULLETIN_SEED_VERSION) {
-      localStorage.setItem('gnc_updates_seed_version', BULLETIN_SEED_VERSION);
-
-      let custom: CommunityUpdate[] = [];
-      if (saved) {
-        const stored: CommunityUpdate[] = JSON.parse(saved);
-        custom = stored.filter(
-          (update) => !legacyIds.has(update.id) && !seedIds.has(update.id),
-        );
-      }
-
-      const merged = withReadState([...INITIAL_UPDATES, ...custom]);
-      localStorage.setItem('gnc_updates', JSON.stringify(merged));
-      return merged;
-    }
-
-    const stored: CommunityUpdate[] = JSON.parse(saved);
-    const storedIds = new Set(stored.map((update) => update.id));
-    const withoutLegacy = stored.filter((update) => !legacyIds.has(update.id));
-    const missingSeeds = INITIAL_UPDATES.filter((update) => !storedIds.has(update.id));
-    const merged = withReadState([...withoutLegacy, ...missingSeeds]);
-
-    if (merged.length !== stored.length) {
-      localStorage.setItem('gnc_updates', JSON.stringify(merged));
-    }
-
-    return merged;
+    return saved ? (JSON.parse(saved) as CommunityUpdate[]) : [];
   } catch {
-    return withReadState(INITIAL_UPDATES);
+    return [];
   }
 }
 

@@ -1,13 +1,14 @@
-import { ArrowLeft, Phone, ShieldCheck } from 'lucide-react';
+import { Phone, ShieldCheck } from 'lucide-react';
 import { Language } from '../lib/languages';
 import { getTranslations } from '../lib/translations';
 import {
   isValidOtpCode,
   normalizeOtpInput,
-  OTP_MAX_LENGTH,
 } from '../lib/otpConstants';
+import BackButton from './BackButton';
+import OtpDigitInput from './OtpDigitInput';
 
-const DEMO_OTP = '123456';
+const DEMO_OTP = '1234';
 
 interface OtpVerificationStepProps {
   mobile: string;
@@ -17,6 +18,8 @@ interface OtpVerificationStepProps {
   onVerify: () => void;
   onBack: () => void;
   onResend?: () => void;
+  onSkip?: () => void;
+  skipLabel?: string;
   error?: string;
   isVerifying?: boolean;
   isSending?: boolean;
@@ -34,6 +37,8 @@ export default function OtpVerificationStep({
   onVerify,
   onBack,
   onResend,
+  onSkip,
+  skipLabel,
   error,
   isVerifying,
   isSending,
@@ -48,14 +53,7 @@ export default function OtpVerificationStep({
 
   return (
     <div className="w-full max-w-md mx-auto min-w-0 space-y-6 py-6">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-primary transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        {t.otpBack}
-      </button>
+      <BackButton onClick={onBack} label={t.otpBack} />
 
       <div className="text-center space-y-2">
         <div className="w-14 h-14 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-center mx-auto">
@@ -92,21 +90,17 @@ export default function OtpVerificationStep({
         }}
         className="space-y-4"
       >
-        <div>
-          <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+        <div className="space-y-2">
+          <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider text-center">
             {t.otpFieldLabel}
           </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={OTP_MAX_LENGTH}
+          <OtpDigitInput
             value={otp}
-            onChange={(e) => onOtpChange(normalizeOtpInput(e.target.value))}
-            placeholder={t.otpPlaceholder}
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-center text-lg font-bold tracking-[0.3em] text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/30"
-            autoFocus
+            onChange={(next) => onOtpChange(normalizeOtpInput(next))}
+            error={Boolean(error)}
+            disabled={isVerifying}
           />
-          {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+          {error && <p className="text-xs text-red-500 text-center">{error}</p>}
         </div>
 
         <button
@@ -129,6 +123,16 @@ export default function OtpVerificationStep({
               : resendCooldown > 0
                 ? t.otpResendWait.replace('{{seconds}}', String(resendCooldown))
                 : t.otpResend}
+          </button>
+        )}
+
+        {onSkip && resendCooldown <= 0 && (
+          <button
+            type="button"
+            onClick={onSkip}
+            className="w-full py-2 text-xs font-semibold text-slate-600 hover:text-primary cursor-pointer"
+          >
+            {skipLabel ?? t.otpNotReceivedPasswordBtn}
           </button>
         )}
       </form>

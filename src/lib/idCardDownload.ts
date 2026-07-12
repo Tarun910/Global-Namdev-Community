@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import { Registration } from '../types';
 import { drawCircularMemberPhoto } from './memberPhoto';
 
@@ -146,6 +145,7 @@ export async function downloadIdCardPng(member: Registration): Promise<void> {
 export async function downloadIdCardPdf(member: Registration): Promise<void> {
   const canvas = await renderCommunityIdCardCanvas(member);
   const imgData = canvas.toDataURL('image/png');
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'px',

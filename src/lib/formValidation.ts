@@ -26,12 +26,6 @@ export function isValidDobOrAge(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed) return false;
 
-  const ageOnly = /^\d{1,3}$/.test(trimmed);
-  if (ageOnly) {
-    const age = Number(trimmed);
-    return age >= 1 && age <= 120;
-  }
-
   const match = trimmed.match(DOB_PATTERN);
   if (!match) return false;
 

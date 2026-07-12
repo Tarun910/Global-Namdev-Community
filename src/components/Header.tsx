@@ -11,6 +11,7 @@ import Logo from './Logo';
 interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onRegisterClick?: () => void;
   unreadCount: number;
   language: Language;
   setLanguage: (lang: Language) => void;
@@ -23,7 +24,8 @@ interface HeaderProps {
 
 export default function Header({ 
   activeTab, 
-  setActiveTab, 
+  setActiveTab,
+  onRegisterClick,
   unreadCount,
   language,
   setLanguage,
@@ -168,7 +170,7 @@ export default function Header({
             )}
           </button>
           <button
-            onClick={() => setActiveTab('register')}
+            onClick={() => (onRegisterClick ? onRegisterClick() : setActiveTab('register'))}
             className={`font-geist text-xs font-bold uppercase tracking-wider py-1.5 transition-colors cursor-pointer flex items-center gap-1 ${
               activeTab === 'register' ? 'text-primary' : 'text-slate-500 hover:text-slate-800'
             }`}

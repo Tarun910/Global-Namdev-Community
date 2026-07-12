@@ -1,21 +1,17 @@
 import i18n from './i18n';
-import { baseTranslations as translations } from './localeBase';
-import { extendedTranslations, ExtendedTranslationStrings } from './localeExtended';
+import { localeStrings, TranslationStrings } from './localeStrings';
 import { Language } from './languages';
 
-export { translations };
+export { localeStrings as translations };
 
-export type TranslationStrings = (typeof translations)['en'] & ExtendedTranslationStrings;
+export type { TranslationStrings };
 
-const ALL_KEYS = [
-  ...Object.keys(translations.en),
-  ...Object.keys(extendedTranslations.en),
-] as (keyof TranslationStrings)[];
+const ALL_KEYS = Object.keys(localeStrings.en) as (keyof TranslationStrings)[];
 
-type FullLang = keyof typeof translations;
+type FullLang = keyof typeof localeStrings;
 
 function resolveStaticLang(language: Language): FullLang {
-  if (language in extendedTranslations) {
+  if (language in localeStrings) {
     return language as FullLang;
   }
   return 'hi';
@@ -23,10 +19,7 @@ function resolveStaticLang(language: Language): FullLang {
 
 function staticTranslations(language: Language): TranslationStrings {
   const lang = resolveStaticLang(language);
-  return {
-    ...translations[lang],
-    ...extendedTranslations[lang],
-  } as TranslationStrings;
+  return localeStrings[lang];
 }
 
 export function getTranslations(language: Language): TranslationStrings {
@@ -37,7 +30,7 @@ export function getTranslations(language: Language): TranslationStrings {
   const fixedT = i18n.getFixedT(language);
   return new Proxy({} as TranslationStrings, {
     get(_target, prop: string) {
-      if (prop in translations.en || prop in extendedTranslations.en) {
+      if (prop in localeStrings.en) {
         return fixedT(prop);
       }
       return undefined;
@@ -46,7 +39,7 @@ export function getTranslations(language: Language): TranslationStrings {
       return ALL_KEYS;
     },
     getOwnPropertyDescriptor(_target, prop) {
-      if (typeof prop === 'string' && (prop in translations.en || prop in extendedTranslations.en)) {
+      if (typeof prop === 'string' && prop in localeStrings.en) {
         return { enumerable: true, configurable: true };
       }
       return undefined;

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { LogIn } from 'lucide-react';
+import { LogIn, KeyRound } from 'lucide-react';
 import { Registration } from '../types';
 import {
   normalizeMobile,
@@ -10,6 +10,14 @@ import {
   AuthSession,
 } from '../lib/demoAuth';
 import { resendPhoneOtp, sendPhoneOtp, verifyPhoneOtp } from '../lib/phoneOtp';
+import { isOtpFallbackEligible, otpUnavailableMessage } from '../lib/otpFallback';
+import {
+  authenticateMemberWithPassword,
+  findRegistrationByIdentifier,
+  isCommunityIdIdentifier,
+} from '../lib/memberAuth';
+import { isSupabaseConfigured } from '../lib/supabase/client';
+import { validateMemberLoginPasswordField } from '../lib/validateForms';
 import { useOtpMode } from '../hooks/useOtpMode';
 import OtpVerificationStep from './OtpVerificationStep';
 import Msg91CaptchaMount from './Msg91CaptchaMount';
@@ -22,29 +30,40 @@ interface LoginTabProps {
   registrations: Registration[];
   onLoginSuccess: (session: AuthSession) => void;
   onNavigateRegister: () => void;
+  onNavigateForgotPassword?: () => void;
   language: Language;
 }
 
-type LoginStep = 'mobile' | 'otp';
+type LoginStep = 'auth' | 'otp';
 
 export default function LoginTab({
   registrations,
   onLoginSuccess,
   onNavigateRegister,
+  onNavigateForgotPassword,
   language,
 }: LoginTabProps) {
   const t = getTranslations(language);
   const { widgetMode } = useOtpMode();
-  const [step, setStep] = useState<LoginStep>('mobile');
+  const [step, setStep] = useState<LoginStep>('auth');
+  const [loginMode, setLoginMode] = useState<'otp' | 'password'>('otp');
   const [dialCode, setDialCode] = useState('+91');
   const [mobile, setMobile] = useState('');
+  const [loginId, setLoginId] = useState('');
+  const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isPasswordLoggingIn, setIsPasswordLoggingIn] = useState(false);
   const [otpDemoMode, setOtpDemoMode] = useState(false);
   const [otpReqId, setOtpReqId] = useState<string | undefined>();
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const usingSupabase = isSupabaseConfigured();
+  const passwordUsesMemberId = isCommunityIdIdentifier(loginId);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -52,13 +71,31 @@ export default function LoginTab({
     return () => window.clearTimeout(timer);
   }, [resendCooldown]);
 
+  const completeLogin = (member: Registration) => {
+    const authSession: AuthSession = {
+      mobileNumber: member.mobileNumber,
+      mobileCountryCode: member.mobileCountryCode ?? '+91',
+      registrationId: member.id,
+      loggedInAt: new Date().toISOString(),
+    };
+    setSession(authSession);
+    onLoginSuccess(authSession);
+  };
+
   const requestOtp = async () => {
     setError('');
+    setInfo('');
     setIsSendingOtp(true);
     const result = await sendPhoneOtp(dialCode, mobile);
     setIsSendingOtp(false);
 
     if (!result.success) {
+      if (isOtpFallbackEligible(result)) {
+        setLoginMode('password');
+        setLoginId(mobile);
+        setInfo(otpUnavailableMessage(language === 'en' ? 'en' : 'hi'));
+        return false;
+      }
       setError(result.message);
       return false;
     }
@@ -73,6 +110,7 @@ export default function LoginTab({
   const handleSendOtp = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
 
     if (!isValidLocalMobile(mobile)) {
       setError(t.loginErrorInvalidMobile);
@@ -99,6 +137,13 @@ export default function LoginTab({
     setIsSendingOtp(false);
 
     if (!result.success) {
+      if (isOtpFallbackEligible(result)) {
+        setStep('auth');
+        setLoginMode('password');
+        setLoginId(mobile);
+        setInfo(otpUnavailableMessage(language === 'en' ? 'en' : 'hi'));
+        return;
+      }
       setError(result.message);
       return;
     }
@@ -127,16 +172,50 @@ export default function LoginTab({
       return;
     }
 
-    const authSession: AuthSession = {
-      mobileNumber: mobile,
-      mobileCountryCode: dialCode,
-      registrationId: member.id,
-      loggedInAt: new Date().toISOString(),
-    };
-
-    setSession(authSession);
+    completeLogin(member);
     setIsVerifying(false);
-    onLoginSuccess(authSession);
+  };
+
+  const handlePasswordLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setInfo('');
+
+    const passwordErrors = validateMemberLoginPasswordField(password);
+    setFieldErrors(passwordErrors);
+    if (Object.keys(passwordErrors).length > 0) return;
+
+    const identifier = loginId.trim();
+    if (!identifier) {
+      setError(t.loginErrorIdentifierRequired);
+      return;
+    }
+
+    const member = findRegistrationByIdentifier(registrations, identifier, dialCode);
+    if (!member) {
+      setError(t.loginErrorNoReg);
+      return;
+    }
+
+    setIsPasswordLoggingIn(true);
+    try {
+      const result = await authenticateMemberWithPassword(
+        registrations,
+        identifier,
+        password,
+        dialCode,
+        usingSupabase,
+      );
+
+      if (!result) {
+        setError(t.loginErrorInvalidPassword);
+        return;
+      }
+
+      completeLogin(result.member);
+    } finally {
+      setIsPasswordLoggingIn(false);
+    }
   };
 
   if (step === 'otp') {
@@ -149,11 +228,18 @@ export default function LoginTab({
         onVerify={handleVerifyOtp}
         onResend={handleResendOtp}
         onBack={() => {
-          setStep('mobile');
+          setStep('auth');
           setOtp('');
           setOtpReqId(undefined);
           setError('');
         }}
+        onSkip={() => {
+          setStep('auth');
+          setLoginMode('password');
+          setLoginId(mobile);
+          setInfo(t.loginOtpSkipHint);
+        }}
+        skipLabel={t.otpNotReceivedPasswordBtn}
         error={error}
         isVerifying={isVerifying}
         isSending={isSendingOtp}
@@ -166,49 +252,166 @@ export default function LoginTab({
   }
 
   return (
-    <motion.div {...pageEnter} className="w-full max-w-md mx-auto min-w-0 py-6 space-y-8">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.05 }}
-        className="text-center space-y-2"
-      >
-        <div className="w-14 h-14 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-center mx-auto">
-          <LogIn className="w-7 h-7 text-primary" />
+    <motion.div {...pageEnter} className="w-full max-w-md mx-auto min-w-0 py-4 space-y-4">
+      <div className="text-center space-y-1.5">
+        <div className="w-12 h-12 bg-orange-50 border border-orange-100 rounded-2xl flex items-center justify-center mx-auto">
+          <LogIn className="w-6 h-6 text-primary" />
         </div>
-        <h2 className="font-sans text-2xl md:text-3xl font-bold text-slate-900">{t.loginTitle}</h2>
-        <p className="text-xs text-slate-500 max-w-sm mx-auto">{t.loginSub}</p>
-      </motion.div>
+        <h2 className="font-sans text-xl md:text-2xl font-bold text-slate-900">{t.loginTitle}</h2>
+        <p className="text-xs text-slate-500 max-w-sm mx-auto leading-snug">{t.loginSub}</p>
+      </div>
 
-      <motion.form
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.12 }}
-        onSubmit={handleSendOtp}
-        className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4 w-full min-w-0"
-      >
-        <MobileWithCountryCode
-          dialCode={dialCode}
-          onDialCodeChange={setDialCode}
-          mobile={mobile}
-          onMobileChange={setMobile}
-          error={error}
-          language={language}
-        />
-
-        {widgetMode && <Msg91CaptchaMount />}
-
-        <motion.button
-          type="submit"
-          disabled={isSendingOtp}
-          {...tapScale}
-          className="w-full py-3 bg-primary text-white font-geist text-sm font-bold rounded-xl shadow-md hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex border-b border-slate-100 bg-slate-50/80 p-1">
+        <button
+          type="button"
+          onClick={() => {
+            setLoginMode('otp');
+            setError('');
+            setInfo('');
+          }}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+            loginMode === 'otp' ? 'bg-white text-primary shadow-sm' : 'text-slate-500'
+          }`}
         >
-          {isSendingOtp ? t.otpSending : t.loginSendOtp}
-        </motion.button>
-      </motion.form>
+          {t.loginModeOtp}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setLoginMode('password');
+            setError('');
+            setInfo('');
+          }}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+            loginMode === 'password' ? 'bg-white text-primary shadow-sm' : 'text-slate-500'
+          }`}
+        >
+          {t.loginModePassword}
+        </button>
+        </div>
 
-      <p className="text-center text-xs text-slate-500">
+        {info && (
+          <div className="mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+            {info}
+          </div>
+        )}
+
+        {loginMode === 'otp' ? (
+          <form onSubmit={handleSendOtp} className="p-4 space-y-2.5">
+          <MobileWithCountryCode
+            dialCode={dialCode}
+            onDialCodeChange={setDialCode}
+            mobile={mobile}
+            onMobileChange={setMobile}
+            error={error}
+            language={language}
+          />
+
+          {widgetMode && <Msg91CaptchaMount />}
+
+          <motion.button
+            type="submit"
+            disabled={isSendingOtp}
+            {...tapScale}
+            className="w-full py-2.5 bg-primary text-white font-geist text-sm font-bold rounded-xl shadow-sm hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+          >
+            {isSendingOtp ? t.otpSending : t.loginSendOtp}
+          </motion.button>
+          </form>
+        ) : (
+          <form onSubmit={handlePasswordLogin} className="p-4 space-y-2.5">
+          {!passwordUsesMemberId ? (
+            <MobileWithCountryCode
+              dialCode={dialCode}
+              onDialCodeChange={setDialCode}
+              mobile={loginId}
+              onMobileChange={setLoginId}
+              language={language}
+            />
+          ) : (
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                {t.loginIdentifierLabel}
+              </label>
+              <input
+                type="text"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
+                placeholder={t.loginIdentifierPh}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none"
+              />
+            </div>
+            )}
+
+            <div className="flex items-center justify-between gap-2">
+              {!passwordUsesMemberId ? (
+                <p className="text-[10px] text-slate-400 leading-snug">{t.loginIdentifierHint}</p>
+              ) : (
+                <span />
+              )}
+              <button
+                type="button"
+                onClick={() => setLoginId(passwordUsesMemberId ? '' : 'GNC-')}
+                className="text-[10px] font-semibold text-primary hover:underline cursor-pointer shrink-0"
+              >
+                {passwordUsesMemberId ? t.loginUseMobileInstead : t.loginUseMemberIdInstead}
+              </button>
+            </div>
+
+            <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+              {t.loginPasswordLabel}
+            </label>
+            <div className="relative">
+              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.password;
+                    return next;
+                  });
+                }}
+                placeholder={t.loginPasswordPh}
+                className={`w-full bg-slate-50 border rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none ${
+                  fieldErrors.password ? 'border-red-400' : 'border-slate-200'
+                }`}
+              />
+            </div>
+            {fieldErrors.password && (
+              <p className="text-[10px] text-red-500 font-medium">{fieldErrors.password}</p>
+            )}
+          </div>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <motion.button
+            type="submit"
+            disabled={isPasswordLoggingIn}
+            {...tapScale}
+            className="w-full py-2.5 bg-primary text-white font-geist text-sm font-bold rounded-xl shadow-sm hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+          >
+            {isPasswordLoggingIn ? t.loginPasswordSigningIn : t.loginPasswordBtn}
+          </motion.button>
+
+          {onNavigateForgotPassword && (
+            <button
+              type="button"
+              onClick={onNavigateForgotPassword}
+              className="w-full text-[11px] font-semibold text-slate-500 hover:text-primary cursor-pointer"
+            >
+              {t.forgotPasswordLink}
+            </button>
+          )}
+          </form>
+        )}
+      </div>
+
+      <p className="text-center text-xs text-slate-500 pt-1">
         {t.loginNotRegistered}{' '}
         <button
           type="button"

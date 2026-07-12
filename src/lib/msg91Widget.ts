@@ -63,7 +63,7 @@ function ensureCaptchaElement(): HTMLElement {
 
   const el = existing ?? document.createElement('div');
   el.id = CAPTCHA_ID;
-  el.className = 'flex justify-center min-h-[78px] w-full';
+  el.className = 'flex justify-center w-full';
   if (!el.isConnected) {
     el.setAttribute('data-msg91-host', 'fallback');
     document.body.appendChild(el);

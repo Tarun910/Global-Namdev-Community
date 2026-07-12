@@ -17,10 +17,13 @@ import RegistrationDetailsForm, { RegistrationFormValues } from './RegistrationD
 import { downloadIdCardPdf, downloadIdCardPng } from '../lib/idCardDownload';
 import { getDialCodeForCountry, formatDisplayMobile } from '../lib/countries';
 import { validateRegistrationFields } from '../lib/validateRegistration';
+import { validateMemberPasswordFields } from '../lib/validateForms';
+import { isOtpFallbackEligible, otpUnavailableMessage } from '../lib/otpFallback';
 import { generateNextCommunityId } from '../lib/communityId';
 
 interface RegisterTabProps {
-  onRegisterSubmit: (registration: Registration) => void;
+  registerMode: 'self' | 'family';
+  onRegisterSubmit: (registration: Registration, password: string) => void | Promise<void>;
   onNavigate: (tab: string) => void;
   onNavigateLogin?: () => void;
   onSessionCreated?: (session: AuthSession) => void;
@@ -28,9 +31,10 @@ interface RegisterTabProps {
   language: Language;
 }
 
-type RegisterStep = 'mobile' | 'otp' | 'form';
+type RegisterStep = 'credentials' | 'otp' | 'form';
 
 export default function RegisterTab({
+  registerMode,
   onRegisterSubmit,
   onNavigate,
   onNavigateLogin,
@@ -41,7 +45,11 @@ export default function RegisterTab({
   const t = getTranslations(language);
   const { widgetMode } = useOtpMode();
 
-  const [registerStep, setRegisterStep] = useState<RegisterStep>('mobile');
+  const [registerStep, setRegisterStep] = useState<RegisterStep>('credentials');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [credentialErrors, setCredentialErrors] = useState<Record<string, string>>({});
+  const [otpFallbackNotice, setOtpFallbackNotice] = useState('');
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [mobileError, setMobileError] = useState('');
@@ -75,8 +83,16 @@ export default function RegisterTab({
   const [district, setDistrict] = useState('');
   const [city, setCity] = useState('');
   const [village, setVillage] = useState('');
-  const [relationship, setRelationship] = useState<Registration['relationship']>('Self');
+  const [relationship, setRelationship] = useState<Registration['relationship'] | ''>(
+    () => (registerMode === 'self' ? 'Self' : ''),
+  );
+  const [registrationKind, setRegistrationKind] = useState<'self' | 'family'>(registerMode);
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+
+  useEffect(() => {
+    setRegistrationKind(registerMode);
+    setRelationship(registerMode === 'self' ? 'Self' : '');
+  }, [registerMode]);
 
   // Success flow state
   const [registeredData, setRegisteredData] = useState<Registration | null>(null);
@@ -85,13 +101,23 @@ export default function RegisterTab({
   // Validation state
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const handleSendRegistrationOtp = async (e: React.FormEvent) => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMobileError('');
+    setCredentialErrors({});
+    setOtpFallbackNotice('');
+
     if (!isValidLocalMobile(mobileNumber)) {
       setMobileError('Enter a valid mobile number.');
       return;
     }
+
+    const passwordErrors = validateMemberPasswordFields(password, passwordConfirm);
+    if (Object.keys(passwordErrors).length > 0) {
+      setCredentialErrors(passwordErrors);
+      return;
+    }
+
     const exists = findRegistrationByMobile(registrations, mobileCountryCode, mobileNumber);
     if (exists) {
       setMobileError('This number is already registered. Please login instead.');
@@ -102,7 +128,15 @@ export default function RegisterTab({
     const result = await sendPhoneOtp(mobileCountryCode, mobileNumber);
     setIsSendingOtp(false);
 
+    setMobileNumber(normalizeMobile(mobileNumber));
+
     if (!result.success) {
+      if (isOtpFallbackEligible(result)) {
+        setMobileVerified(false);
+        setOtpFallbackNotice(otpUnavailableMessage(language === 'en' ? 'en' : 'hi'));
+        setRegisterStep('form');
+        return;
+      }
       setMobileError(result.message);
       return;
     }
@@ -110,7 +144,6 @@ export default function RegisterTab({
     setOtpDemoMode(result.demo ?? false);
     if (result.reqId) setOtpReqId(result.reqId);
     setResendCooldown(30);
-    setMobileNumber(normalizeMobile(mobileNumber));
     setRegisterStep('otp');
   };
 
@@ -166,6 +199,11 @@ export default function RegisterTab({
       gotra: gotra || undefined,
       photoUrl,
     });
+
+    if (registrationKind === 'family' && !relationship) {
+      tempErrors.relationship = 'Select your relationship';
+    }
+
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
@@ -205,7 +243,7 @@ export default function RegisterTab({
     setMobileCountryCode(getDialCodeForCountry(nextCountry));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -232,13 +270,13 @@ export default function RegisterTab({
       district: district.trim(),
       city: city.trim(),
       village: village.trim() || undefined,
-      relationship,
+      relationship: registrationKind === 'self' ? 'Self' : (relationship as Registration['relationship']),
       registrationDate: new Date().toISOString().slice(0, 10),
       isVerified: mobileVerified,
       photoUrl,
     };
 
-    onRegisterSubmit(registrationData);
+    await onRegisterSubmit(registrationData, password);
 
     const authSession: AuthSession = {
       mobileNumber: mobileNumber.trim(),
@@ -268,13 +306,13 @@ export default function RegisterTab({
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-6">
       {!registeredData ? (
-        registerStep === 'mobile' ? (
-          <div className="max-w-md mx-auto space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="font-sans text-2xl font-bold text-slate-900">{t.registerVerifyMobileTitle}</h2>
-              <p className="text-xs text-slate-500">{t.registerVerifyMobileSub}</p>
+        registerStep === 'credentials' ? (
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="text-center space-y-1.5">
+              <h2 className="font-sans text-xl font-bold text-slate-900">{t.registerCredentialsTitle}</h2>
+              <p className="text-xs text-slate-500">{t.registerCredentialsSub}</p>
             </div>
-            <form onSubmit={handleSendRegistrationOtp} className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4">
+            <form onSubmit={handleCredentialsSubmit} className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-2.5">
               <MobileWithCountryCode
                 dialCode={mobileCountryCode}
                 onDialCodeChange={setMobileCountryCode}
@@ -283,13 +321,62 @@ export default function RegisterTab({
                 error={mobileError}
                 language={language}
               />
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  {t.registerPasswordLabel}
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setCredentialErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.password;
+                      return next;
+                    });
+                  }}
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs ${
+                    credentialErrors.password ? 'border-red-400' : 'border-slate-200'
+                  }`}
+                />
+                {credentialErrors.password && (
+                  <p className="text-[10px] text-red-500">{credentialErrors.password}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  {t.registerPasswordConfirmLabel}
+                </label>
+                <input
+                  type="password"
+                  value={passwordConfirm}
+                  onChange={(e) => {
+                    setPasswordConfirm(e.target.value);
+                    setCredentialErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.passwordConfirm;
+                      return next;
+                    });
+                  }}
+                  className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2.5 text-xs ${
+                    credentialErrors.passwordConfirm ? 'border-red-400' : 'border-slate-200'
+                  }`}
+                />
+                {credentialErrors.passwordConfirm && (
+                  <p className="text-[10px] text-red-500">{credentialErrors.passwordConfirm}</p>
+                )}
+              </div>
+
               {widgetMode && <Msg91CaptchaMount />}
               <button
                 type="submit"
                 disabled={isSendingOtp}
-                className="w-full py-3 bg-primary text-white font-geist text-sm font-bold rounded-xl cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 bg-primary text-white font-geist text-sm font-bold rounded-xl cursor-pointer disabled:opacity-50"
               >
-                {isSendingOtp ? t.otpSending : t.loginSendOtp}
+                {isSendingOtp ? t.otpSending : t.registerContinueBtn}
               </button>
             </form>
             {onNavigateLogin && (
@@ -307,7 +394,13 @@ export default function RegisterTab({
             onOtpChange={setOtp}
             onVerify={handleVerifyRegistrationOtp}
             onResend={handleResendRegistrationOtp}
-            onBack={() => { setRegisterStep('mobile'); setOtp(''); setOtpReqId(undefined); setOtpError(''); }}
+            onBack={() => { setRegisterStep('credentials'); setOtp(''); setOtpReqId(undefined); setOtpError(''); }}
+            onSkip={() => {
+              setMobileVerified(false);
+              setRegisterStep('form');
+              setOtpFallbackNotice(t.registerOtpSkipNotice);
+            }}
+            skipLabel={t.otpNotReceivedPasswordBtn}
             error={otpError}
             isVerifying={isVerifyingOtp}
             isSending={isSendingOtp}
@@ -326,11 +419,20 @@ export default function RegisterTab({
           <div className="border-b border-slate-100 pb-4 space-y-1">
             <div className="flex items-center gap-2 text-primary font-bold">
               <Award className="w-5 h-5 text-primary" />
-              <h2 className="font-sans text-xl font-bold text-slate-900">{relationship === 'Self' ? t.registerSelfTitle : t.registerFamilyTitle}</h2>
+              <h2 className="font-sans text-xl font-bold text-slate-900">
+                {registrationKind === 'self' ? t.registerSelfTitle : t.registerFamilyTitle}
+              </h2>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Mobile {formatDisplayMobile(mobileCountryCode, mobileNumber)} verified ✓ Complete your profile below.
+              {mobileVerified
+                ? `Mobile ${formatDisplayMobile(mobileCountryCode, mobileNumber)} verified ✓ Complete your profile below.`
+                : `${t.registerPasswordOnlyNotice} ${formatDisplayMobile(mobileCountryCode, mobileNumber)}`}
             </p>
+            {otpFallbackNotice && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                {otpFallbackNotice}
+              </p>
+            )}
           </div>
 
           <form onSubmit={handleFormSubmit} className="space-y-6">
@@ -350,7 +452,7 @@ export default function RegisterTab({
                 district,
                 city,
                 village: village || undefined,
-                relationship,
+                relationship: (registrationKind === 'self' ? 'Self' : relationship) as Registration['relationship'],
                 photoUrl,
               }}
               onChange={updateFormField}
@@ -358,6 +460,8 @@ export default function RegisterTab({
               t={t}
               mobileDisplay={formatDisplayMobile(mobileCountryCode, mobileNumber)}
               onCountryChange={handleCountryChange}
+              showRelationshipField={registrationKind === 'family'}
+              showOtpVerifiedBadge={mobileVerified}
             />
 
             {/* Checkbox consent */}
@@ -443,7 +547,11 @@ export default function RegisterTab({
             <button
               onClick={() => {
                 setRegisteredData(null);
-                setRegisterStep('mobile');
+                setRegistrationKind('family');
+                setRegisterStep('credentials');
+                setPassword('');
+                setPasswordConfirm('');
+                setOtpFallbackNotice('');
                 setOtp('');
                 setMobileVerified(false);
                 setFullName('');
@@ -460,6 +568,7 @@ export default function RegisterTab({
                 setDistrict('');
                 setCity('');
                 setVillage('');
+                setRelationship('');
               }}
               className="text-xs font-geist font-bold text-slate-500 hover:text-primary transition-all text-center cursor-pointer flex items-center justify-center gap-1"
             >

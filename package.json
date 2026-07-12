@@ -19,7 +19,6 @@
     "@supabase/supabase-js": "^2.110.2",
     "bcryptjs": "^3.0.3",
     "country-state-city": "^3.2.1",
-    "html2canvas": "^1.4.1",
     "i18next": "^26.3.6",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
