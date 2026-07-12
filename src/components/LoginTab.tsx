@@ -15,6 +15,7 @@ import {
   authenticateMemberWithPassword,
   findRegistrationByIdentifier,
   isCommunityIdIdentifier,
+  memberHasPassword,
 } from '../lib/memberAuth';
 import { isSupabaseConfigured } from '../lib/supabase/client';
 import { validateMemberLoginPasswordField } from '../lib/validateForms';
@@ -197,6 +198,12 @@ export default function LoginTab({
       return;
     }
 
+    const hasPassword = await memberHasPassword(member, usingSupabase);
+    if (!hasPassword) {
+      setError(t.loginErrorNoPasswordSet);
+      return;
+    }
+
     setIsPasswordLoggingIn(true);
     try {
       const result = await authenticateMemberWithPassword(
@@ -213,6 +220,9 @@ export default function LoginTab({
       }
 
       completeLogin(result.member);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t.loginErrorInvalidPassword;
+      setError(message);
     } finally {
       setIsPasswordLoggingIn(false);
     }
@@ -282,6 +292,9 @@ export default function LoginTab({
             setLoginMode('password');
             setError('');
             setInfo('');
+            if (!loginId.trim() && mobile.trim()) {
+              setLoginId(mobile);
+            }
           }}
           className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
             loginMode === 'password' ? 'bg-white text-primary shadow-sm' : 'text-slate-500'

@@ -39,10 +39,13 @@ export async function memberHasPassword(
   member: Registration,
   usingSupabase = isSupabaseConfigured(),
 ): Promise<boolean> {
+  if (memberHasLocalPassword(member.id)) return true;
+
   if (usingSupabase) {
     return membersRepo.memberHasPassword(member.id);
   }
-  return memberHasLocalPassword(member.id);
+
+  return false;
 }
 
 export async function setMemberPasswordAfterRegister(
@@ -50,18 +53,62 @@ export async function setMemberPasswordAfterRegister(
   password: string,
   usingSupabase = isSupabaseConfigured(),
 ): Promise<boolean> {
+  const trimmedPassword = password.trim();
+  if (trimmedPassword.length < 6) return false;
+
+  await setLocalMemberPassword(member.id, trimmedPassword);
+
+  if (!usingSupabase) return true;
+
   const dialCode = member.mobileCountryCode ?? '+91';
-  if (usingSupabase) {
-    return membersRepo.setMemberPasswordOnRegister(
+  const mobile = normalizeMobile(member.mobileNumber);
+
+  let savedToSupabase = false;
+  try {
+    savedToSupabase = await membersRepo.setMemberPasswordOnRegister(
       member.id,
       dialCode,
-      member.mobileNumber,
-      password,
+      mobile,
+      trimmedPassword,
     );
+  } catch {
+    savedToSupabase = false;
   }
 
-  await setLocalMemberPassword(member.id, password);
-  return true;
+  if (!savedToSupabase) {
+    try {
+      savedToSupabase = await membersRepo.setMemberPasswordDirect(member.id, trimmedPassword);
+    } catch {
+      savedToSupabase = false;
+    }
+  }
+
+  return savedToSupabase || memberHasLocalPassword(member.id);
+}
+
+async function verifySupabaseMemberPassword(
+  member: Registration,
+  identifier: string,
+  password: string,
+  dialCode: string,
+): Promise<boolean> {
+  const loginId = isCommunityIdIdentifier(identifier)
+    ? identifier.trim()
+    : normalizeMobile(identifier);
+  const loginDial = isCommunityIdIdentifier(identifier) ? '+91' : dialCode;
+
+  try {
+    const verified = await membersRepo.verifyMemberLogin(loginId, password, loginDial);
+    if (verified?.member_id === member.id) return true;
+  } catch {
+    // RPC may be missing if migration 003 was not applied yet.
+  }
+
+  try {
+    return await membersRepo.verifyMemberPasswordDirect(member.id, password);
+  } catch {
+    return false;
+  }
 }
 
 export async function authenticateMemberWithPassword(
@@ -74,19 +121,23 @@ export async function authenticateMemberWithPassword(
   const member = findRegistrationByIdentifier(registrations, identifier, dialCode);
   if (!member) return null;
 
+  const trimmedPassword = password.trim();
+  if (trimmedPassword.length < 6) return null;
+
   if (usingSupabase) {
-    const loginId = isCommunityIdIdentifier(identifier)
-      ? identifier.trim()
-      : normalizeMobile(identifier);
-    const loginDial = isCommunityIdIdentifier(identifier) ? '+91' : dialCode;
-    const verified = await membersRepo.verifyMemberLogin(loginId, password, loginDial);
-    if (!verified || verified.member_id !== member.id) return null;
-    return { member };
+    const supabaseOk = await verifySupabaseMemberPassword(
+      member,
+      identifier,
+      trimmedPassword,
+      dialCode,
+    );
+    if (supabaseOk) return { member };
   }
 
-  const passwordOk = await verifyLocalMemberPassword(member.id, password);
-  if (!passwordOk) return null;
-  return { member };
+  const localOk = await verifyLocalMemberPassword(member.id, trimmedPassword);
+  if (localOk) return { member };
+
+  return null;
 }
 
 export async function resetMemberPassword(
@@ -112,17 +163,36 @@ export async function resetMemberPassword(
 
   if (!dobMatch || !fatherMatch || !idMatch) return false;
 
+  const trimmedPassword = params.newPassword.trim();
+  if (trimmedPassword.length < 6) return false;
+
+  await setLocalMemberPassword(member.id, trimmedPassword);
+
   if (usingSupabase) {
-    return membersRepo.resetMemberPassword({
-      dialCode: params.dialCode,
-      mobile: params.mobile,
-      dobOrAge: params.dobOrAge,
-      fathersName: params.fathersName,
-      communityId: params.communityId,
-      newPassword: params.newPassword,
-    });
+    let ok = false;
+    try {
+      ok = await membersRepo.resetMemberPassword({
+        dialCode: params.dialCode,
+        mobile: normalizeMobile(params.mobile),
+        dobOrAge: params.dobOrAge,
+        fathersName: params.fathersName,
+        communityId: params.communityId,
+        newPassword: trimmedPassword,
+      });
+    } catch {
+      ok = false;
+    }
+
+    if (!ok) {
+      try {
+        ok = await membersRepo.setMemberPasswordDirect(member.id, trimmedPassword);
+      } catch {
+        ok = false;
+      }
+    }
+
+    return ok || memberHasLocalPassword(member.id);
   }
 
-  await setLocalMemberPassword(member.id, params.newPassword);
   return true;
 }

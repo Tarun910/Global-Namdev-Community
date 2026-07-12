@@ -100,6 +100,7 @@ export default function RegisterTab({
 
   // Validation state
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [submitError, setSubmitError] = useState('');
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +134,7 @@ export default function RegisterTab({
     if (!result.success) {
       if (isOtpFallbackEligible(result)) {
         setMobileVerified(false);
+        setMobileNumber(normalizeMobile(mobileNumber));
         setOtpFallbackNotice(otpUnavailableMessage(language === 'en' ? 'en' : 'hi'));
         setRegisterStep('form');
         return;
@@ -245,6 +247,7 @@ export default function RegisterTab({
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError('');
     if (!validateForm()) return;
 
     const registrationYear = new Date().getFullYear();
@@ -259,7 +262,7 @@ export default function RegisterTab({
       mothersName: mothersName.trim() || undefined,
       gender,
       dobOrAge: dobOrAge.trim(),
-      mobileNumber: mobileNumber.trim(),
+      mobileNumber: normalizeMobile(mobileNumber),
       mobileCountryCode,
       email: email.trim() || undefined,
       gotra: gotra.trim() || undefined,
@@ -276,10 +279,15 @@ export default function RegisterTab({
       photoUrl,
     };
 
-    await onRegisterSubmit(registrationData, password);
+    try {
+      await onRegisterSubmit(registrationData, password);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      return;
+    }
 
     const authSession: AuthSession = {
-      mobileNumber: mobileNumber.trim(),
+      mobileNumber: normalizeMobile(mobileNumber),
       mobileCountryCode,
       registrationId: id,
       loggedInAt: new Date().toISOString(),
@@ -471,6 +479,10 @@ export default function RegisterTab({
                 I hereby declare that all the information submitted above is true, and I consent to cataloging this data on the Global Namdev Community member directory. I understand this is for community count and statistics purposes.
               </label>
             </div>
+
+            {submitError && (
+              <p className="text-xs text-red-500 font-medium">{submitError}</p>
+            )}
 
             {/* Submit block */}
             <div className="pt-4">

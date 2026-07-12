@@ -67,6 +67,40 @@ export interface MemberLoginRow {
   full_name: string;
 }
 
+export async function setMemberPasswordDirect(
+  memberId: string,
+  password: string,
+): Promise<boolean> {
+  const bcrypt = await import('bcryptjs');
+  const hash = bcrypt.hashSync(password.trim(), 10);
+  const { error } = await getSupabaseClient()
+    .from('members')
+    .update({
+      password_hash: hash,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', memberId);
+
+  if (error) return false;
+  return true;
+}
+
+export async function verifyMemberPasswordDirect(
+  memberId: string,
+  password: string,
+): Promise<boolean> {
+  const { data, error } = await getSupabaseClient()
+    .from('members')
+    .select('password_hash')
+    .eq('id', memberId)
+    .maybeSingle();
+
+  if (error || !data?.password_hash) return false;
+
+  const bcrypt = await import('bcryptjs');
+  return bcrypt.compareSync(password.trim(), data.password_hash as string);
+}
+
 export async function verifyMemberLogin(
   identifier: string,
   password: string,

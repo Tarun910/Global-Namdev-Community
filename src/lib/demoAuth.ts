@@ -11,6 +11,11 @@ export function normalizeMobile(mobile: string): string {
   return mobile.replace(/\D/g, '');
 }
 
+export function normalizeDialCode(dialCode: string): string {
+  const digits = dialCode.replace(/\D/g, '');
+  return digits ? `+${digits}` : '+91';
+}
+
 export function toFullMobile(dialCode: string, localMobile: string): string {
   const code = dialCode.replace(/\D/g, '');
   const local = normalizeMobile(localMobile);
@@ -27,14 +32,16 @@ export function findRegistrationByMobile(
   localMobile: string
 ) {
   const local = normalizeMobile(localMobile);
+  const normalizedDial = normalizeDialCode(dialCode);
+
   return registrations.find((registration) => {
-    const regDial = getRegistrationDialCode(registration);
+    const regDial = normalizeDialCode(getRegistrationDialCode(registration));
     const regLocal = normalizeMobile(registration.mobileNumber);
-    if (regDial === dialCode) {
+    if (regDial === normalizedDial) {
       return regLocal === local;
     }
     // Legacy records without country code (India +91, 10-digit)
-    if (!registration.mobileCountryCode && dialCode === '+91') {
+    if (!registration.mobileCountryCode && normalizedDial === '+91') {
       return regLocal === local || regLocal.slice(-10) === local.slice(-10);
     }
     return false;

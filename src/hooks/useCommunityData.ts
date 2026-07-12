@@ -14,7 +14,8 @@ import {
 import * as membersRepo from '../lib/supabase/repositories/members';
 import * as updatesRepo from '../lib/supabase/repositories/updates';
 import * as forumRepo from '../lib/supabase/repositories/forum';
-import { setLocalMemberPassword } from '../lib/memberPasswordStore';
+import { setMemberPasswordAfterRegister } from '../lib/memberAuth';
+import { normalizeMobile } from '../lib/demoAuth';
 
 function isMemberRegistrationBulletin(update: CommunityUpdate): boolean {
   return update.id.startsWith('reg-notif-') || update.title === 'New Member Registered!';
@@ -189,22 +190,28 @@ export function useCommunityData(): UseCommunityDataResult {
 
   const handleRegisterSubmit = useCallback(
     async (newReg: Registration, password?: string) => {
+      const normalizedReg: Registration = {
+        ...newReg,
+        mobileNumber: normalizeMobile(newReg.mobileNumber),
+      };
+
       if (usingSupabase) {
-        const saved = await membersRepo.insertMember(newReg);
+        const saved = await membersRepo.insertMember(normalizedReg);
         if (password) {
-          await membersRepo.setMemberPasswordOnRegister(
-            saved.id,
-            saved.mobileCountryCode ?? '+91',
-            saved.mobileNumber,
-            password,
-          );
+          const passwordSaved = await setMemberPasswordAfterRegister(saved, password, true);
+          if (!passwordSaved) {
+            throw new Error('Registration saved but password could not be stored. Please use Forgot Password.');
+          }
         }
         setRegistrations((prev) => [saved, ...prev]);
       } else {
         if (password) {
-          await setLocalMemberPassword(newReg.id, password);
+          const passwordSaved = await setMemberPasswordAfterRegister(normalizedReg, password, false);
+          if (!passwordSaved) {
+            throw new Error('Registration saved but password could not be stored.');
+          }
         }
-        setRegistrations((prev) => [newReg, ...prev]);
+        setRegistrations((prev) => [normalizedReg, ...prev]);
       }
     },
     [usingSupabase]
