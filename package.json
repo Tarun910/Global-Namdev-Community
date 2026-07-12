@@ -14,6 +14,7 @@
     "supabase:configure": "node scripts/configure-supabase-env.mjs",
     "supabase:apply-member-auth": "node scripts/apply-member-auth-migration.mjs",
     "supabase:check-member-auth": "node scripts/check-member-auth.mjs",
+    "test:production": "node scripts/production-smoke-test.mjs",
     "deploy": "vercel --prod",
     "deploy:preview": "vercel"
   },
