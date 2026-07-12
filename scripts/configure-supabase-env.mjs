@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
+import { probeAdminLoginRpc } from './loadEnv.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -43,10 +44,7 @@ upsertEnv('VITE_SUPABASE_ANON_KEY', anonKey);
 
 const client = createClient(url, anonKey);
 const { error: membersError } = await client.from('members').select('id', { count: 'exact', head: true });
-const { error: adminError } = await client.rpc('verify_admin_login', {
-  p_username: 'superadmin',
-  p_password: 'password123',
-});
+const adminError = await probeAdminLoginRpc(client);
 
 if (membersError) {
   console.error('\n❌ Connected but tables missing. Run the SQL migration first.');

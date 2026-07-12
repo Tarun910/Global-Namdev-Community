@@ -131,5 +131,5 @@ upsertEnv('VITE_SUPABASE_ANON_KEY', anonKey);
 console.log('\n✅ Supabase setup complete!');
 console.log(`   URL:  ${url}`);
 console.log(`   .env updated at: ${envPath}`);
-console.log(`   Admin login: superadmin / password123`);
+console.log(`   Admin login: superadmin — set password via supabase/scripts/rotate-super-admin-password.example.sql`);
 console.log('\nRestart the dev server: npm run dev\n');

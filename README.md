@@ -34,9 +34,9 @@ When `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in `.env`, the app
 3. Add your project URL and anon key to `.env` (see `.env.example`).
 4. Restart `npm run dev`. On first load, demo seed data is inserted if tables are empty.
 
-**Default admin (after migration):** `superadmin` / `password123` — change this in production.
+**Super admin:** username `superadmin`. After running migrations, set a strong password in Supabase SQL Editor (see `supabase/scripts/rotate-super-admin-password.example.sql`). Admin login requires Supabase in production.
 
-Without Supabase env vars, the app continues to use localStorage (same as before).
+Without Supabase env vars, the app continues to use localStorage (same as before). Sub-admins can be stored locally; super admin login needs Supabase.
 
 ## Deploy on Vercel
 

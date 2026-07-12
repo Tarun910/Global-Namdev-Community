@@ -2,28 +2,11 @@
 /**
  * Check member password auth readiness on Supabase (no secrets printed).
  * Usage: npm run supabase:check-member-auth
+ *
+ * Optional: set ADMIN_TEST_PASSWORD in .env to verify superadmin login.
  */
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '..');
-const envPath = path.join(root, '.env');
-
-function loadEnvFile() {
-  if (!fs.existsSync(envPath)) return;
-  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq <= 0) continue;
-    const key = trimmed.slice(0, eq);
-    const value = trimmed.slice(eq + 1);
-    if (process.env[key] === undefined) process.env[key] = value;
-  }
-}
+import { loadEnvFile, probeAdminLoginRpc, verifyAdminLoginWithPassword } from './loadEnv.mjs';
 
 loadEnvFile();
 
@@ -48,14 +31,22 @@ console.log(
   hashColError ? `MISSING (${hashColError.message})` : 'OK — run 003 migration if this fails',
 );
 
-const { error: adminRpcError } = await client.rpc('verify_admin_login', {
-  p_username: 'superadmin',
-  p_password: 'password123',
-});
+const adminRpcError = await probeAdminLoginRpc(client);
 console.log(
   'pgcrypto (admin RPC):',
   adminRpcError ? `FAIL (${adminRpcError.message})` : 'OK — run 002 migration if this fails',
 );
+
+const adminTestPassword = process.env.ADMIN_TEST_PASSWORD?.trim();
+if (adminTestPassword) {
+  const loginCheck = await verifyAdminLoginWithPassword(client, adminTestPassword);
+  console.log(
+    'superadmin login:',
+    loginCheck.ok ? 'OK' : `FAIL (${loginCheck.error ?? 'wrong password'})`,
+  );
+} else {
+  console.log('superadmin login: skipped (set ADMIN_TEST_PASSWORD in .env to verify)');
+}
 
 const { error: memberRpcError } = await client.rpc('verify_member_login', {
   p_identifier: '0000000000',

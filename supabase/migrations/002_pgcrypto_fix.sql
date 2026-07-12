@@ -101,9 +101,10 @@ BEGIN
 END;
 $$;
 
--- Re-hash super admin if pgcrypto was missing during initial insert
+-- Re-hash super admin if pgcrypto was missing during initial insert.
+-- Replace the placeholder below with your own strong password before running on production.
 UPDATE admin_users
-SET password_hash = crypt('password123', gen_salt('bf'))
+SET password_hash = crypt('change-me-on-first-deploy', gen_salt('bf'))
 WHERE username = 'superadmin';
 
 GRANT EXECUTE ON FUNCTION verify_admin_login(TEXT, TEXT) TO anon, authenticated;

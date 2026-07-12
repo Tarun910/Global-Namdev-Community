@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
+import { probeAdminLoginRpc, verifyAdminLoginWithPassword } from './loadEnv.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
@@ -80,13 +81,18 @@ async function testTables(client) {
 }
 
 async function testRpcs(client) {
-  const { error: adminErr, data: adminData } = await client.rpc('verify_admin_login', {
-    p_username: 'superadmin',
-    p_password: 'password123',
-  });
+  const adminErr = await probeAdminLoginRpc(client);
   if (adminErr) fail('RPC verify_admin_login', adminErr.message);
-  else if (adminData?.length) pass('RPC verify_admin_login', 'superadmin login works');
-  else warn('RPC verify_admin_login', 'returned empty (wrong password or no superadmin row)');
+  else pass('RPC verify_admin_login', 'callable');
+
+  const adminTestPassword = process.env.ADMIN_TEST_PASSWORD?.trim();
+  if (adminTestPassword) {
+    const loginCheck = await verifyAdminLoginWithPassword(client, adminTestPassword);
+    if (loginCheck.ok) pass('Superadmin login', 'ADMIN_TEST_PASSWORD accepted');
+    else fail('Superadmin login', loginCheck.error ?? 'wrong password');
+  } else {
+    warn('Superadmin login', 'Skipped — set ADMIN_TEST_PASSWORD in .env to verify');
+  }
 
   const { error: memberErr } = await client.rpc('verify_member_login', {
     p_identifier: '0000000000',

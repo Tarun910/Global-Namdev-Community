@@ -91,11 +91,11 @@ CREATE TABLE IF NOT EXISTS admin_users (
   created_by TEXT
 );
 
--- Default super admin: superadmin / password123 (change after first login)
+-- Bootstrap super admin — set a strong password immediately after first deploy.
 INSERT INTO admin_users (username, password_hash, is_super_admin, created_by)
 VALUES (
   'superadmin',
-  crypt('password123', gen_salt('bf')),
+  crypt('change-me-on-first-deploy', gen_salt('bf')),
   true,
   'system'
 )

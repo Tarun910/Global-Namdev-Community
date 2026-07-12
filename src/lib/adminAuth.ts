@@ -26,7 +26,6 @@ const ADMIN_SESSION_KEY = 'gnc_admin_session';
 const ADMIN_ACCOUNTS_KEY = 'gnc_admin_accounts';
 
 export const SUPER_ADMIN_USERNAME = 'superadmin';
-export const SUPER_ADMIN_PASSWORD = 'password123';
 
 /** Legacy alias — treated as super admin for existing installs. */
 const LEGACY_SUPER_ADMIN_USERNAME = 'admin';
@@ -80,15 +79,9 @@ function authenticateAdminLocal(username: string, password: string): AdminSessio
   const normalizedUsername = normalizeUsername(username);
   const trimmedPassword = password.trim();
 
+  // Super admin auth is Supabase-only — no client-side password fallback.
   if (isSuperAdminUsername(normalizedUsername)) {
-    if (trimmedPassword !== SUPER_ADMIN_PASSWORD) return null;
-    const session: AdminSession = {
-      username: SUPER_ADMIN_USERNAME,
-      isSuperAdmin: true,
-      loggedInAt: new Date().toISOString(),
-    };
-    setAdminSession(session);
-    return session;
+    return null;
   }
 
   const account = readStoredAdmins().find(
